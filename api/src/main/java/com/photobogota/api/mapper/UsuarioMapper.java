@@ -34,6 +34,7 @@ public interface UsuarioMapper {
     @Mapping(target = "telefono", ignore = true)
     @Mapping(target = "puntos", ignore = true)
     @Mapping(target = "nivel", ignore = true)
+    @Mapping(target = "rol", ignore = true)
     Miembro toMiembroEntity(RegistroRequestDTO dto);
 
     // Método genérico que delega a toMiembroEntity (usado para registro de nuevos
