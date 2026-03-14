@@ -1,6 +1,5 @@
 package com.photobogota.api.repository;
 
-
 import java.util.Optional;
 
 import org.bson.types.ObjectId;
@@ -12,7 +11,5 @@ import com.photobogota.api.model.Usuario;
 @Repository
 public interface UsuarioRepository extends MongoRepository<Usuario, ObjectId> {
     
-    Optional<Usuario> findByCredenciales_Email(String email);
-    
-    boolean existsByCredenciales_Email(String email);
+    Optional<Usuario> findById(ObjectId id);
 }

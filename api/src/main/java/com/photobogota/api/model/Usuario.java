@@ -31,7 +31,4 @@ public abstract class Usuario { // Hacemos la clase abstracta para que no se pue
     
     @Builder.Default
     private LocalDateTime fechaRegistro = LocalDateTime.now();
-
-    // Credenciales separadas del perfil
-    private Credenciales credenciales;
 }
