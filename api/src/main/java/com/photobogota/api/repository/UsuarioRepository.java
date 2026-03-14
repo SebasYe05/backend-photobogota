@@ -12,7 +12,7 @@ import com.photobogota.api.model.Usuario;
 @Repository
 public interface UsuarioRepository extends MongoRepository<Usuario, ObjectId> {
     
-    Optional<Usuario> findByEmail(String email);
+    Optional<Usuario> findByCredenciales_Email(String email);
     
-    boolean existsByEmail(String email);
+    boolean existsByCredenciales_Email(String email);
 }

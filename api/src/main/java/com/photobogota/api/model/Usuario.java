@@ -20,20 +20,18 @@ import lombok.experimental.SuperBuilder;
 public abstract class Usuario { // Hacemos la clase abstracta para que no se pueda instanciar directamente
     private ObjectId id;
     private String nombresCompletos;
-    private String email;
     private LocalDate fechaNacimiento;
     private String telefono;
-    private String contrasena;
     private String fotoPefil;
 
     @Builder.Default
     private Boolean estadoCuenta = true;
     
-    private String nombreUsuario;
     private String biografia;
     
     @Builder.Default
     private LocalDateTime fechaRegistro = LocalDateTime.now();
 
-    private Rol rol;
+    // Credenciales separadas del perfil
+    private Credenciales credenciales;
 }

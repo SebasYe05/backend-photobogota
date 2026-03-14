@@ -19,10 +19,14 @@ public interface UsuarioMapper {
     @Mapping(target = "tipoUsuario", expression = "java(usuario.getClass().getSimpleName().toUpperCase())")
     @Mapping(target = "puntos", ignore = true)
     @Mapping(target = "nivel", ignore = true)
+    @Mapping(target = "email", source = "credenciales.email")
+    @Mapping(target = "nombreUsuario", source = "credenciales.nombreUsuario")
     PerfilUsuarioDTO toDTO(Usuario usuario);
 
     // Mapeo específico para Miembro (para que no pierda puntos ni nivel)
     @Mapping(target = "tipoUsuario", constant = "miembro")
+    @Mapping(target = "email", source = "credenciales.email")
+    @Mapping(target = "nombreUsuario", source = "credenciales.nombreUsuario")
     PerfilUsuarioDTO toDTO(Miembro miembro);
 
     // Mapeo de Registro a Entidad
@@ -34,7 +38,7 @@ public interface UsuarioMapper {
     @Mapping(target = "telefono", ignore = true)
     @Mapping(target = "puntos", ignore = true)
     @Mapping(target = "nivel", ignore = true)
-    @Mapping(target = "rol", ignore = true)
+    @Mapping(target = "credenciales", ignore = true)
     Miembro toMiembroEntity(RegistroRequestDTO dto);
 
     // Método genérico que delega a toMiembroEntity (usado para registro de nuevos

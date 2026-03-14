@@ -7,6 +7,7 @@ import com.photobogota.api.dto.PerfilUsuarioDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.exception.EmailAlreadyExistsException;
 import com.photobogota.api.mapper.UsuarioMapper;
+import com.photobogota.api.model.Credenciales;
 import com.photobogota.api.model.Miembro;
 import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.Usuario;
@@ -26,7 +27,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     public PerfilUsuarioDTO registrar(RegistroRequestDTO dto) {
         
         // Verificar si el email ya está registrado
-        if (usuarioRepository.existsByEmail(dto.getEmail())) {
+        if (usuarioRepository.existsByCredenciales_Email(dto.getEmail())) {
             throw new EmailAlreadyExistsException(
                 "El email " + dto.getEmail() + " ya está registrado en el sistema"
             );
@@ -38,10 +39,15 @@ public class UsuarioServiceImpl implements IUsuarioService {
         miembro.setPuntos(0L);
         miembro.setNivel(1);
 
-        miembro.setRol(Rol.MIEMBRO);
+        // Crear credenciales con rol de miembro
+        Credenciales credenciales = Credenciales.builder()
+            .nombreUsuario(dto.getNombreUsuario())
+            .email(dto.getEmail())
+            .rol(Rol.MIEMBRO)
+            .contrasena(passwordEncoder.encode(dto.getContrasena()))
+            .build();
         
-        // Encriptar la contraseña antes de guardarla
-        miembro.setContrasena(passwordEncoder.encode(miembro.getContrasena()));
+        miembro.setCredenciales(credenciales);
 
         Usuario guardado = usuarioRepository.save(miembro);
 
