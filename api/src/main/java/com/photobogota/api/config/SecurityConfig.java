@@ -45,8 +45,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/usuarios/**").permitAll()
+                        .requestMatchers("/api/v1/admin/crear-admin").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/logs/**").hasRole("ADMIN")
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/api/v1/**").authenticated() // Cualquier otra ruta bajo /api/v1/ requiere autenticación
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

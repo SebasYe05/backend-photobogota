@@ -4,5 +4,5 @@ public enum Rol {
     MIEMBRO,
     SOCIO,
     MODERADOR,
-    ADMINISTRADO
+    ADMIN
 }
