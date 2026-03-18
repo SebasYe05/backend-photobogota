@@ -1,6 +1,8 @@
 package com.photobogota.api.service;
 
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UsuarioServiceImpl implements IUsuarioService {
 
+    private static final Logger logger = LoggerFactory.getLogger(UsuarioServiceImpl.class);
+
     private final UsuarioRepository usuarioRepository;
     private final UsuarioAuthRepository usuarioAuthRepository;
     private final UsuarioMapper usuarioMapper;
@@ -28,9 +32,11 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
     @Override
     public RegistroResponseDTO registrar(RegistroRequestDTO dto) {
+        logger.info("Intentando registrar usuario con email: {}", dto.getEmail());
         
         // Verificar si el email ya está registrado en usuarios-auth
         if (usuarioAuthRepository.existsByEmail(dto.getEmail())) {
+            logger.warn("Intento de registro con email existente: {}", dto.getEmail());
             throw new EmailAlreadyExistsException(
                 "El email " + dto.getEmail() + " ya está registrado en el sistema"
             );
@@ -59,6 +65,8 @@ public class UsuarioServiceImpl implements IUsuarioService {
         // Guardar en ambas colecciones con el mismo ID
         Usuario usuarioGuardado = usuarioRepository.save(miembro);
         usuarioAuthRepository.save(usuarioAuth);
+        
+        logger.info("Usuario registrado exitosamente con ID: {}", id.toString());
 
         // Retornar solo la fecha de registro
         return RegistroResponseDTO.builder()
