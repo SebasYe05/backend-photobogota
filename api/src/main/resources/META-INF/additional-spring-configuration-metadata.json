@@ -1,0 +1,19 @@
+{
+  "properties": [
+    {
+      "name": "application.security.jwt.secret",
+      "type": "java.lang.String",
+      "description": "Clave secreta para firmar los tokens JWT"
+    },
+    {
+      "name": "application.security.jwt.expiration",
+      "type": "java.lang.Long",
+      "description": "Tiempo de expiración del token JWT en milisegundos"
+    },
+    {
+      "name": "application.security.jwt.refresh-expiration",
+      "type": "java.lang.Long",
+      "description": "Tiempo de expiración del token de refresh en milisegundos"
+    }
+  ]
+}

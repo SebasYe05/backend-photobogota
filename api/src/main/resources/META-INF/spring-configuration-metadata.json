@@ -1,0 +1,27 @@
+{
+  "groups": [
+    {
+      "name": "application.security.jwt",
+      "type": "com.photobogota.api.config.JwtService",
+      "description": "Propiedades de configuración de seguridad JWT"
+    }
+  ],
+  "properties": [
+    {
+      "name": "application.security.jwt.secret",
+      "type": "java.lang.String",
+      "description": "Clave secreta JWT para firmar tokens (codificada en Base64)"
+    },
+    {
+      "name": "application.security.jwt.expiration",
+      "type": "java.lang.Long",
+      "description": "Tiempo de expiración del token JWT en milisegundos (predeterminado: 86400000 = 24 horas)"
+    },
+    {
+      "name": "application.security.jwt.refresh-expiration",
+      "type": "java.lang.Long",
+      "description": "Tiempo de expiración del token de refresh JWT en milisegundos (predeterminado: 604800000 = 7 días)"
+    }
+  ],
+  "hints": []
+}
