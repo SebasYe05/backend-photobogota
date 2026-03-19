@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.TypeAlias;
 
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -18,9 +17,6 @@ import lombok.experimental.SuperBuilder;
 @ToString(callSuper = true)
 @TypeAlias("admin")
 public class Admin extends Usuario {
-
-    @Builder.Default
-    private Long accionesRealizadas = 0L;
 
     private LocalDateTime ultimaConexionPanel;
 
