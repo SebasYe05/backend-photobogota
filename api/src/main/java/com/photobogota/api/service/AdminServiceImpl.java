@@ -53,7 +53,6 @@ public class AdminServiceImpl implements IAdminService {
                 .telefono(dto.getTelefono())
                 .biografia(dto.getBiografia())
                 .estadoCuenta(true)
-                .accionesRealizadas(0L)
                 .build();
 
         UsuarioAuth usuarioAuth = UsuarioAuth.builder()
