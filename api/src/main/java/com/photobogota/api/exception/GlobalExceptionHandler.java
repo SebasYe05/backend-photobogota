@@ -1,5 +1,6 @@
 package com.photobogota.api.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.dao.DuplicateKeyException;
@@ -19,76 +20,86 @@ import java.util.Map;
 @Slf4j
 public class GlobalExceptionHandler {
 
-
-
-    // 1. Errores de Validación (Campos vacíos, formatos incorrectos)
+    // 1. Errores de validación (campos vacíos, formatos incorrectos)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
+    public ResponseEntity<Map<String, Object>> handleValidationErrors(
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
+
         log.warn("Error de validación en petición: {}", ex.getBindingResult().getObjectName());
-        
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        
+
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors()
                 .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
-        
+
+        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, null, request);
         body.put("errors", errors);
+
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    // 2. Conflictos de datos (Duplicados en DB)
-    @ExceptionHandler({DuplicateKeyException.class, EmailAlreadyExistsException.class})
-    public ResponseEntity<Map<String, Object>> handleConflicts(Exception ex) {
+    // 2. Conflictos de unicidad (email, username, duplicados en DB)
+    @ExceptionHandler({ResourceAlreadyExistsException.class, DuplicateKeyException.class})
+    public ResponseEntity<Map<String, Object>> handleConflicts(
+            Exception ex, HttpServletRequest request) {
+
         log.warn("Conflicto de datos detectado: {}", ex.getMessage());
-        
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.CONFLICT.value());
-        body.put("message", ex instanceof DuplicateKeyException 
-                ? "El correo o nombre de usuario ya existe en PhotoBogota" 
-                : ex.getMessage());
-        
+
+        String message = ex instanceof DuplicateKeyException
+                ? "El correo o nombre de usuario ya existe en PhotoBogota"
+                : ex.getMessage();
+
+        Map<String, Object> body = buildBody(HttpStatus.CONFLICT, message, request);
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
     }
 
-    // 3. Errores de Seguridad (Acceso denegado)
+    // 3. Credenciales inválidas (401)
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(
+            InvalidCredentialsException ex, HttpServletRequest request) {
+
+        log.warn("Credenciales inválidas en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
+    }
+
+    // 4. Acceso denegado (403)
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
-        log.error("Intento de acceso no autorizado: {}", ex.getMessage());
-        
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.FORBIDDEN.value());
-        body.put("message", "No tienes permiso para acceder a este recurso");
-        
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest request) {
+
+        log.error("Intento de acceso no autorizado a {}: {}", request.getRequestURI(), ex.getMessage());
+
+        Map<String, Object> body = buildBody(
+                HttpStatus.FORBIDDEN, "No tienes permiso para acceder a este recurso", request);
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
 
-    // 4. EL MÁS IMPORTANTE: Cualquier otra excepción no manejada
+    // 5. Cualquier otra excepción no manejada (500)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {
-        
-        log.error("CRITICAL ERROR", ex);
-        
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+    public ResponseEntity<Map<String, Object>> handleGlobalException(
+            Exception ex, HttpServletRequest request) {
+
+        log.error("CRITICAL ERROR en {}", request.getRequestURI(), ex);
+
+        Map<String, Object> body = buildBody(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Ocurrió un error inesperado. Por favor contacte al administrador.",
+                request);
         body.put("error", "Internal Server Error");
-        body.put("message", "Ocurrió un error inesperado. Por favor contacte al administrador.");
-        
+
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @ExceptionHandler(UsernameAlreadyExistsException.class)
-    public ResponseEntity<Map<String, Object>> handleUsernameConflict(UsernameAlreadyExistsException ex) {
-        log.warn("Conflicto de nombre de usuario: {}", ex.getMessage());
+    // --- Utilidad para construir el body base ---
+    private Map<String, Object> buildBody(HttpStatus status, String message, HttpServletRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.CONFLICT.value());
-        body.put("message", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+        body.put("status", status.value());
+        body.put("path", request.getRequestURI());
+        if (message != null) {
+            body.put("message", message);
+        }
+        return body;
     }
-    
 }

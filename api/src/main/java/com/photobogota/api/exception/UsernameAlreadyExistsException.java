@@ -1,12 +1,8 @@
 package com.photobogota.api.exception;
 
-public class UsernameAlreadyExistsException extends RuntimeException {
+public class UsernameAlreadyExistsException extends ResourceAlreadyExistsException {
 
-    public UsernameAlreadyExistsException(String message) {
-        super(message);
-    }
-
-    public UsernameAlreadyExistsException(String message, Throwable cause) {
-        super(message, cause);
+    public UsernameAlreadyExistsException(String username) {
+        super("nombre de usuario", username);
     }
 }
