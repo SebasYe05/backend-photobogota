@@ -10,12 +10,14 @@ import com.photobogota.api.model.UsuarioAuth;
 
 @Repository
 public interface UsuarioAuthRepository extends MongoRepository<UsuarioAuth, ObjectId> {
-    
+
     Optional<UsuarioAuth> findByEmail(String email);
-    
+
     boolean existsByEmail(String email);
-    
+
     Optional<UsuarioAuth> findByNombreUsuario(String nombreUsuario);
-    
+
     boolean existsByNombreUsuario(String nombreUsuario);
+
+    Optional<UsuarioAuth> findByEmailOrNombreUsuario(String email, String nombreUsuario);
 }

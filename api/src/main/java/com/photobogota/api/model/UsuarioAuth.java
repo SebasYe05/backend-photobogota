@@ -1,6 +1,7 @@
 package com.photobogota.api.model;
 
 import org.bson.types.ObjectId;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -21,7 +22,11 @@ import lombok.NoArgsConstructor;
 @Document(collection = "usuarios-auth")
 public class UsuarioAuth {
     private ObjectId id;
+
+    @Indexed(unique = true)
     private String nombreUsuario;
+
+    @Indexed(unique = true)
     private String email;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
