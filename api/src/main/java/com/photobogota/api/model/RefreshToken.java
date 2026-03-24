@@ -12,7 +12,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Document(collection = "refresh-tokens")
+@Document(collection = "refresh_tokens")
 @Data
 @Builder
 @NoArgsConstructor

@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "usuarios-auth")
+@Document(collection = "usuarios_auth")
 public class UsuarioAuth {
     private ObjectId id;
 
