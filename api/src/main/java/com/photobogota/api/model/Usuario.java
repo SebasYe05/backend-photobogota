@@ -30,5 +30,8 @@ public abstract class Usuario { // Hacemos la clase abstracta para que no se pue
     private String biografia;
     
     @Builder.Default
+    private Boolean correoConfirmado = false;
+    
+    @Builder.Default
     private LocalDateTime fechaRegistro = LocalDateTime.now();
 }

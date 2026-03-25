@@ -35,6 +35,7 @@ public interface UsuarioMapper {
     @Mapping(target = "fotoPefil", ignore = true)
     @Mapping(target = "biografia", ignore = true)
     @Mapping(target = "estadoCuenta", constant = "true")
+    @Mapping(target = "correoConfirmado", constant = "false")
     @Mapping(target = "telefono", ignore = true)
     @Mapping(target = "puntos", ignore = true)
     @Mapping(target = "nivel", ignore = true)
