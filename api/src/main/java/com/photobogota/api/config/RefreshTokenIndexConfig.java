@@ -18,7 +18,7 @@ public class RefreshTokenIndexConfig {
     @PostConstruct
     public void createRefreshTokenTTLIndex() {
         // Crear índice TTL en fechaExpiracion para auto-eliminar tokens vencidos
-        mongoTemplate.indexOps("refresh-tokens")
+        mongoTemplate.indexOps("refresh_tokens")
             .createIndex(new Index()
                 .on("fechaExpiracion", org.springframework.data.domain.Sort.Direction.ASC)
                 .expire(0, TimeUnit.SECONDS)
