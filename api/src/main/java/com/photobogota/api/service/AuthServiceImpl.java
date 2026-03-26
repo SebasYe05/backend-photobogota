@@ -43,59 +43,6 @@ public class AuthServiceImpl implements IAuthService {
     private final IRefreshToken refreshTokenService;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * Autentica a un usuario con sus credenciales.
-     * Busca el usuario por email o nombre de usuario, verifica la contraseña y
-     * genera los tokens.
-     * 
-     * @param request DTO con las credenciales del usuario (login y contraseña)
-     * @return LoginResponseDTO con el token JWT, refresh token e información del
-     *         usuario
-     * @throws InvalidCredentialsException si las credenciales son inválidas
-     */
-    @Override
-    public LoginResponseDTO login(LoginRequestDTO request) {
-        // 1. Buscar al usuario por email O por nombre de usuario
-        UsuarioAuth usuario = usuarioAuthRepository.findByEmailOrNombreUsuario(request.getLogin(), request.getLogin())
-                .orElseThrow(() -> new InvalidCredentialsException("Credenciales inválidas"));
-
-        // 2. Verificar si la contraseña coincide
-        if (!passwordEncoder.matches(request.getContrasena(), usuario.getContrasena())) {
-            throw new InvalidCredentialsException("Credenciales inválidas");
-        }
-
-        // 3. Obtener el nivel del usuario desde la colección de usuarios
-        // Solo los miembros tienen nivel
-        Integer nivel = null;
-        if (usuario.getId() != null && usuario.getRol() == Rol.MIEMBRO) {
-            Optional<?> usuarioOpt = usuarioRepository.findById(usuario.getId());
-            if (usuarioOpt.isPresent() && usuarioOpt.get() instanceof Miembro) {
-                nivel = ((Miembro) usuarioOpt.get()).getNivel();
-            }
-        }
-
-        // 4. Generar el token JWT con claims adicionales (rol y email)
-        Map<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("rol", usuario.getRol().name());
-        extraClaims.put("email", usuario.getEmail());
-        
-        String token = jwtService.generarToken(extraClaims, usuario.getNombreUsuario());
-
-        // 5. Generar el refresh token
-        String refreshToken = refreshTokenService.crearRefreshToken(usuario.getEmail());
-
-        // 6. Mapear y retornar la respuesta
-        return LoginResponseDTO.builder()
-                .token(token)
-                .refreshToken(refreshToken)
-                .email(usuario.getEmail())
-                .nombreUsuario(usuario.getNombreUsuario())
-                .rol(usuario.getRol().name())
-                .nivel(nivel)
-                .mensaje("Autenticación exitosa")
-                .build();
-    }
-    
     @Override
     @Transactional
     public RegistroResponseDTO registrar(RegistroRequestDTO dto) {
@@ -148,6 +95,107 @@ public class AuthServiceImpl implements IAuthService {
         // Retornar solo la fecha de registro
         return RegistroResponseDTO.builder()
                 .mensaje("Usuario registrado exitosamente")
+                .build();
+    }
+
+    /**
+     * Autentica a un usuario con sus credenciales.
+     * Busca el usuario por email o nombre de usuario, verifica la contraseña y
+     * genera los tokens.
+     * 
+     * @param request DTO con las credenciales del usuario (login y contraseña)
+     * @return LoginResponseDTO con el token JWT, refresh token e información del
+     *         usuario
+     * @throws InvalidCredentialsException si las credenciales son inválidas
+     */
+    @Override
+    public LoginResponseDTO login(LoginRequestDTO request) {
+        // 1. Buscar al usuario por email O por nombre de usuario
+        UsuarioAuth usuario = usuarioAuthRepository.findByEmailOrNombreUsuario(request.getLogin(), request.getLogin())
+                .orElseThrow(() -> new InvalidCredentialsException("Credenciales inválidas"));
+
+        // 2. Verificar si la contraseña coincide
+        if (!passwordEncoder.matches(request.getContrasena(), usuario.getContrasena())) {
+            throw new InvalidCredentialsException("Credenciales inválidas");
+        }
+
+        // 3. Obtener el nivel del usuario desde la colección de usuarios
+        // Solo los miembros tienen nivel
+        Integer nivel = null;
+        if (usuario.getId() != null && usuario.getRol() == Rol.MIEMBRO) {
+            Optional<?> usuarioOpt = usuarioRepository.findById(usuario.getId());
+            if (usuarioOpt.isPresent() && usuarioOpt.get() instanceof Miembro) {
+                nivel = ((Miembro) usuarioOpt.get()).getNivel();
+            }
+        }
+
+        // 4. Generar el token JWT con claims adicionales (rol y email)
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("rol", usuario.getRol().name());
+        extraClaims.put("email", usuario.getEmail());
+        
+        String token = jwtService.generarToken(extraClaims, usuario.getNombreUsuario());
+
+        // 5. Generar el refresh token
+        String refreshToken = refreshTokenService.crearRefreshToken(usuario.getEmail());
+
+        // 6. Mapear y retornar la respuesta
+        return LoginResponseDTO.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .email(usuario.getEmail())
+                .nombreUsuario(usuario.getNombreUsuario())
+                .rol(usuario.getRol().name())
+                .nivel(nivel)
+                .mensaje("Autenticación exitosa")
+                .build();
+    }
+
+    /**
+     * Refresca el token JWT usando un refresh token válido.
+     * Valida el refresh token, genera un nuevo JWT y un nuevo refresh token.
+     * 
+     * @param refreshToken El token de refresh
+     * @return LoginResponseDTO con el nuevo token JWT y refresh token
+     * @throws RuntimeException si el refresh token es inválido o ha expirado
+     */
+    @Override
+    public LoginResponseDTO refreshToken(String refreshToken) {
+        // 1. Validar el refresh token y obtener el email
+        String email = refreshTokenService.obtenerEmailSiValido(refreshToken);
+
+        // 2. Buscar el usuario por email
+        UsuarioAuth usuario = usuarioAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // 3. Obtener el nivel del usuario
+        Integer nivel = null;
+        if (usuario.getId() != null && usuario.getRol() == Rol.MIEMBRO) {
+            Optional<?> usuarioOpt = usuarioRepository.findById(usuario.getId());
+            if (usuarioOpt.isPresent() && usuarioOpt.get() instanceof Miembro) {
+                nivel = ((Miembro) usuarioOpt.get()).getNivel();
+            }
+        }
+
+        // 4. Generar el nuevo token JWT
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("rol", usuario.getRol().name());
+        extraClaims.put("email", usuario.getEmail());
+
+        String newToken = jwtService.generarToken(extraClaims, usuario.getNombreUsuario());
+
+        // 5. Generar un nuevo refresh token (esto también invalida el anterior)
+        String newRefreshToken = refreshTokenService.crearRefreshToken(usuario.getEmail());
+
+        // 6. Retornar la respuesta con los nuevos tokens
+        return LoginResponseDTO.builder()
+                .token(newToken)
+                .refreshToken(newRefreshToken)
+                .email(usuario.getEmail())
+                .nombreUsuario(usuario.getNombreUsuario())
+                .rol(usuario.getRol().name())
+                .nivel(nivel)
+                .mensaje("Token refrescado exitosamente")
                 .build();
     }
 

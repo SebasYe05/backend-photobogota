@@ -26,4 +26,12 @@ public interface IAuthService {
      * @return DTO con la respuesta del registro
      */
     RegistroResponseDTO registrar(RegistroRequestDTO dto);
+
+    /**
+     * Refresca el token JWT usando un refresh token.
+     * 
+     * @param refreshToken El token de refresh
+     * @return DTO con el nuevo token JWT y refresh token
+     */
+    LoginResponseDTO refreshToken(String refreshToken);
 }

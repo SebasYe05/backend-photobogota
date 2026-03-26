@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.photobogota.api.dto.LoginRequestDTO;
 import com.photobogota.api.dto.LoginResponseDTO;
+import com.photobogota.api.dto.RefreshTokenRequestDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
 import com.photobogota.api.service.IAuthService;
@@ -47,6 +48,18 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
         LoginResponseDTO response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Endpoint para actualizar el token JWT usando un refresh token.
+     * 
+     * @param request DTO con el refresh token
+     * @return LoginResponseDTO con el nuevo token JWT y refresh token
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponseDTO> refreshToken(@RequestBody RefreshTokenRequestDTO request) {
+        LoginResponseDTO response = authService.refreshToken(request.getRefreshToken());
         return ResponseEntity.ok(response);
     }
 }
