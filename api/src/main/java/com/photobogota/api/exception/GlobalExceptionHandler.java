@@ -75,6 +75,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
 
+    // 3.1 No autorizado personalizado (401)
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(
+            UnauthorizedException ex, HttpServletRequest request) {
+
+        log.warn("No autorizado en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
+    }
+
     // 5. Cualquier otra excepción no manejada (500)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(

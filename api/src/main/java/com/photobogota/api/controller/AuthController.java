@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.photobogota.api.dto.LoginRequestDTO;
 import com.photobogota.api.dto.LoginResponseDTO;
+import com.photobogota.api.dto.LogoutResponseDTO;
 import com.photobogota.api.dto.RefreshTokenRequestDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
@@ -60,6 +61,27 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDTO> refreshToken(@RequestBody RefreshTokenRequestDTO request) {
         LoginResponseDTO response = authService.refreshToken(request.getRefreshToken());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Endpoint para cerrar sesión.
+     * Revoca el refresh token para invalidar la sesión del usuario.
+     * 
+     * @param request DTO con el refresh token
+     * @return LogoutResponseDTO con el mensaje de confirmación
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<LogoutResponseDTO> logout(@RequestBody(required = false) RefreshTokenRequestDTO request) {
+        // Si no hay token en el cuerpo, igual devolvemos OK para que el front limpie su
+        // estado
+        if (request == null || request.getRefreshToken() == null || request.getRefreshToken().isEmpty()) {
+            return ResponseEntity.ok(LogoutResponseDTO.builder()
+                    .mensaje("Sesión cerrada localmente")
+                    .build());
+        }
+
+        LogoutResponseDTO response = authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(response);
     }
 }

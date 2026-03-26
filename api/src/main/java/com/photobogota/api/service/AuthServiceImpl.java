@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.photobogota.api.config.JwtService;
 import com.photobogota.api.dto.LoginRequestDTO;
 import com.photobogota.api.dto.LoginResponseDTO;
+import com.photobogota.api.dto.LogoutResponseDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
 import com.photobogota.api.exception.EmailAlreadyExistsException;
@@ -166,7 +167,7 @@ public class AuthServiceImpl implements IAuthService {
 
         // 2. Buscar el usuario por email
         UsuarioAuth usuario = usuarioAuthRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new InvalidCredentialsException("Usuario no encontrado"));
 
         // 3. Obtener el nivel del usuario
         Integer nivel = null;
@@ -196,6 +197,27 @@ public class AuthServiceImpl implements IAuthService {
                 .rol(usuario.getRol().name())
                 .nivel(nivel)
                 .mensaje("Token refrescado exitosamente")
+                .build();
+    }
+
+    /**
+     * Cierra la sesión del usuario revocando el refresh token.
+     * Invalida el refresh token proporcionado para que no pueda ser usado nuevamente.
+     * 
+     * @param refreshToken El token de refresh a revocar
+     * @return DTO con el mensaje de confirmación
+     */
+    @Override
+    public LogoutResponseDTO logout(String refreshToken) {
+        log.info("Intentando cerrar sesión con refresh token");
+        
+        // Revocar el refresh token
+        refreshTokenService.revocarToken(refreshToken);
+        
+        log.info("Sesión cerrada exitosamente");
+        
+        return LogoutResponseDTO.builder()
+                .mensaje("Sesión cerrada exitosamente")
                 .build();
     }
 

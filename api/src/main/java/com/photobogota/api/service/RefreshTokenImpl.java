@@ -1,12 +1,11 @@
 package com.photobogota.api.service;
 
 import java.util.Date;
-import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
 import com.photobogota.api.config.JwtService;
+import com.photobogota.api.exception.UnauthorizedException;
 import com.photobogota.api.model.RefreshToken;
 import com.photobogota.api.repository.RefreshTokenRepository;
 
@@ -21,36 +20,38 @@ public class RefreshTokenImpl implements IRefreshToken {
 
     @Override
     public String crearRefreshToken(String email) {
-        // Revocar tokens anteriores del usuario
-        revocarTodosLosTokens(email);
 
-        // Generar el token de refresh usando JwtService
+        refreshTokenRepository.deleteByEmail(email);
+
         String token = jwtService.generarTokenRefresh(email);
 
-        // Crear el objeto RefreshToken
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(token)
                 .email(email)
-                .fechaExpiracion(new Date(System.currentTimeMillis() + 604800000L)) // 7 días
+                .fechaExpiracion(new Date(System.currentTimeMillis() + 604800000L))
                 .revocado(false)
-                .fechaCreacion(new Date(System.currentTimeMillis()))
+                .fechaCreacion(new Date())
                 .build();
 
-        // Guardar y retornar el token
-        RefreshToken savedToken = refreshTokenRepository.save(refreshToken);
-        return savedToken.getToken();
+        return refreshTokenRepository.save(refreshToken).getToken();
     }
 
     @Override
     public String obtenerEmailSiValido(String token) {
+        // 1. Si el token no existe en Mongo, mandamos 401
         RefreshToken rt = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token no encontrado"));
+                .orElseThrow(() -> new UnauthorizedException("Sesión no encontrada en el servidor"));
 
-        if (rt.isRevocado())
-            throw new RuntimeException("Token revocado");
+        // 2. Si está revocado, limpiamos y mandamos 401
+        if (rt.isRevocado()) {
+            refreshTokenRepository.delete(rt);
+            throw new UnauthorizedException("La sesión ha sido revocada");
+        }
+
+        // 3. Si expiró, limpiamos y mandamos 401
         if (rt.getFechaExpiracion().before(new Date())) {
             refreshTokenRepository.delete(rt);
-            throw new RuntimeException("Token expirado");
+            throw new UnauthorizedException("La sesión ha expirado");
         }
 
         return rt.getEmail();
@@ -58,20 +59,11 @@ public class RefreshTokenImpl implements IRefreshToken {
 
     @Override
     public void revocarToken(String token) {
-        Optional<RefreshToken> refreshTokenOpt = refreshTokenRepository.findByToken(token);
-
-        if (refreshTokenOpt.isPresent()) {
-            RefreshToken refreshToken = refreshTokenOpt.get();
-            refreshToken.setRevocado(true);
-            refreshTokenRepository.save(refreshToken);
-        }
+        refreshTokenRepository.findByToken(token).ifPresent(refreshTokenRepository::delete);
     }
 
     @Override
     public void revocarTodosLosTokens(String email) {
-        List<RefreshToken> tokens = refreshTokenRepository.findAllByEmail(email);
-
-        tokens.forEach(t -> t.setRevocado(true));
-        refreshTokenRepository.saveAll(tokens);
+        refreshTokenRepository.deleteByEmail(email);
     }
 }
