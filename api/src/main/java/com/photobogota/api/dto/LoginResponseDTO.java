@@ -41,6 +41,11 @@ public class LoginResponseDTO {
     private String rol;
     
     /**
+     * Nivel del usuario (para miembros)
+     */
+    private Integer nivel;
+    
+    /**
      * Mensaje de éxito
      */
     private String mensaje;

@@ -2,16 +2,27 @@ package com.photobogota.api.service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
+import org.bson.types.ObjectId;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.photobogota.api.config.JwtService;
 import com.photobogota.api.dto.LoginRequestDTO;
 import com.photobogota.api.dto.LoginResponseDTO;
+import com.photobogota.api.dto.RegistroRequestDTO;
+import com.photobogota.api.dto.RegistroResponseDTO;
+import com.photobogota.api.exception.EmailAlreadyExistsException;
 import com.photobogota.api.exception.InvalidCredentialsException;
+import com.photobogota.api.exception.UsernameAlreadyExistsException;
+import com.photobogota.api.mapper.UsuarioMapper;
+import com.photobogota.api.model.Miembro;
+import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.UsuarioAuth;
 import com.photobogota.api.repository.UsuarioAuthRepository;
+import com.photobogota.api.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthServiceImpl implements IAuthService {
 
     private final UsuarioAuthRepository usuarioAuthRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final UsuarioMapper usuarioMapper;
     private final JwtService jwtService;
     private final IRefreshToken refreshTokenService;
     private final PasswordEncoder passwordEncoder;
@@ -51,24 +64,90 @@ public class AuthServiceImpl implements IAuthService {
             throw new InvalidCredentialsException("Credenciales inválidas");
         }
 
-        // 3. Generar el token JWT con claims adicionales (rol y email)
+        // 3. Obtener el nivel del usuario desde la colección de usuarios
+        // Solo los miembros tienen nivel
+        Integer nivel = null;
+        if (usuario.getId() != null && usuario.getRol() == Rol.MIEMBRO) {
+            Optional<?> usuarioOpt = usuarioRepository.findById(usuario.getId());
+            if (usuarioOpt.isPresent() && usuarioOpt.get() instanceof Miembro) {
+                nivel = ((Miembro) usuarioOpt.get()).getNivel();
+            }
+        }
+
+        // 4. Generar el token JWT con claims adicionales (rol y email)
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("rol", usuario.getRol().name());
         extraClaims.put("email", usuario.getEmail());
         
         String token = jwtService.generarToken(extraClaims, usuario.getNombreUsuario());
 
-        // 4. Generar el refresh token
+        // 5. Generar el refresh token
         String refreshToken = refreshTokenService.crearRefreshToken(usuario.getEmail());
 
-        // 5. Mapear y retornar la respuesta
+        // 6. Mapear y retornar la respuesta
         return LoginResponseDTO.builder()
                 .token(token)
                 .refreshToken(refreshToken)
                 .email(usuario.getEmail())
                 .nombreUsuario(usuario.getNombreUsuario())
                 .rol(usuario.getRol().name())
+                .nivel(nivel)
                 .mensaje("Autenticación exitosa")
+                .build();
+    }
+    
+    @Override
+    @Transactional
+    public RegistroResponseDTO registrar(RegistroRequestDTO dto) {
+        log.info("Intentando registrar usuario con email: {}", dto.getEmail());
+
+        // Verificar si el email ya está registrado en usuarios-auth
+        if (usuarioAuthRepository.existsByEmail(dto.getEmail())) {
+            log.warn("Intento de registro con email existente: {}", dto.getEmail());
+            throw new EmailAlreadyExistsException(
+                    "El email " + dto.getEmail() + " ya está registrado en el sistema");
+        }
+
+        if (usuarioAuthRepository.existsByNombreUsuario(dto.getNombreUsuario())) {
+            log.warn("Intento de registro con nombre de usuario existente: {}", dto.getNombreUsuario());
+            throw new UsernameAlreadyExistsException(
+                    "El nombre de usuario " + dto.getNombreUsuario() + " ya está en uso");
+        }
+
+        // Generar el ID que se usará en ambas colecciones
+        ObjectId id = new ObjectId();
+
+        // Crear el perfil del usuario (colección: usuarios)
+        Miembro miembro = usuarioMapper.toMiembroEntity(dto);
+        miembro.setId(id);
+
+        // Inicializar puntos y nivel para nuevos miembros
+        miembro.setPuntos(0L);
+        miembro.setNivel(1);
+
+        // Crear las credenciales (colección: usuarios-auth) con el mismo ID
+        UsuarioAuth usuarioAuth = UsuarioAuth.builder()
+                .id(id)
+                .nombreUsuario(dto.getNombreUsuario())
+                .email(dto.getEmail())
+                .rol(Rol.MIEMBRO)
+                .contrasena(passwordEncoder.encode(dto.getContrasena()))
+                .build();
+
+        // Guardar en ambas colecciones con el mismo ID
+        try {
+            usuarioRepository.save(miembro);
+            usuarioAuthRepository.save(usuarioAuth);
+        } catch (Exception e) {
+            log.error("Error crítico al guardar el usuario: {}", e.getMessage());
+            throw new RuntimeException("Error al registrar el usuario", e);
+        }
+
+        log.info("Usuario registrado exitosamente con ID: {}", id.toString());
+
+        // Retornar solo la fecha de registro
+        return RegistroResponseDTO.builder()
+                .mensaje("Usuario registrado exitosamente")
                 .build();
     }
 
