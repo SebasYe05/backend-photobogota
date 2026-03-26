@@ -63,6 +63,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
     }
 
+    // 3.1 Error en cambio de contraseña (400)
+    @ExceptionHandler(CambioContrasenaException.class)
+    public ResponseEntity<Map<String, Object>> handleCambioContrasena(
+            CambioContrasenaException ex, HttpServletRequest request) {
+
+        log.warn("Error en cambio de contraseña en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
     // 4. Acceso denegado (403)
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(
