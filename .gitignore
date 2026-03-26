@@ -1,0 +1,42 @@
+# --- Java & Maven ---
+**/target/
+target/
+*.jar
+*.war
+*.ear
+.mvn/wrapper/
+
+# Evita subir el archivo de ayuda que genera Spring
+HELP.md
+
+# --- Variables Sensibles ---
+.env
+*.local
+
+# --- Docker ---
+# Solo subimos el dockerfile
+.docker/
+
+# Si usamos Docker Desktop o configuraciones específicas de Linux
+.docker-compose.override.yml
+
+# --- IDEs (VS Code & IntelliJ) ---
+.vscode/
+.idea/
+*.iml
+*.swp
+.classpath
+.project
+.settings/
+bin/
+
+# --- Logs ---
+# Según tu application.properties, guardas logs en la carpeta /logs
+logs/
+*.log
+*.log.gz
+
+# --- Sistema Operativo (Linux Mint / macOS) ---
+.DS_Store
+thumbs.db
+.directory
