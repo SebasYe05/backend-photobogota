@@ -2,6 +2,8 @@ package com.photobogota.api.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,9 +18,11 @@ import com.photobogota.api.dto.RefreshTokenRequestDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
 import com.photobogota.api.service.IAuthService;
+import com.photobogota.api.dto.UsuarioResumenDTO;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * Controlador para manejar las operaciones de autenticación.
@@ -47,7 +51,7 @@ public class AuthController {
      * @return LoginResponseDTO con el token JWT y datos del usuario
      */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
         LoginResponseDTO response = authService.login(request);
         return ResponseEntity.ok(response);
     }
@@ -84,4 +88,22 @@ public class AuthController {
         LogoutResponseDTO response = authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(response);
     }
+
+    /** 
+     * Endpoint para obtener un resumen de los datos del usuario autenticado.
+     * Usa @AuthenticationPrincipal para acceder al usuario autenticado desde el token JWT.
+     * 
+     * @return UsuarioResumenDTO con los datos básicos del usuario (nombre, foto, rol)
+     * @throws InvalidCredentialsException Si el usuario no se encuentra
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResumenDTO> obtenerUsuarioAutenticado(
+            @AuthenticationPrincipal UserDetails currentUser) {
+
+        // El service busca los datos básicos (nombre, foto, rol) usando el username del
+        // token
+        UsuarioResumenDTO user = authService.getResumenUsuario(currentUser.getUsername());
+        return ResponseEntity.ok(user);
+    }
+
 }

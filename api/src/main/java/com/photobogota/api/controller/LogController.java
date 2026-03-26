@@ -1,6 +1,8 @@
 package com.photobogota.api.controller;
 
 import com.photobogota.api.dto.LogFileInfo;
+import com.photobogota.api.utils.StreamUtils;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -18,7 +21,7 @@ import java.util.stream.Stream;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/admin/logs")
-@PreAuthorize("hasRole('ADMIN')")  
+@PreAuthorize("hasRole('ADMIN')")
 public class LogController {
 
     @Value("${logging.file.path:logs}")
@@ -42,10 +45,11 @@ public class LogController {
             return ResponseEntity.ok(List.of("El archivo de log aún no ha sido creado."));
         }
 
+        // El try-with-resources cierra el archivo automáticamente al terminar
         try (Stream<String> stream = Files.lines(path)) {
-            List<String> allLines = stream.collect(Collectors.toList());
-            int start = Math.max(0, allLines.size() - lines);
-            return ResponseEntity.ok(allLines.subList(start, allLines.size()));
+            List<String> lastLines = stream.collect(StreamUtils.<String>lastN(lines));
+            Collections.reverse(lastLines); // El log más nuevo aparecerá primero en el JSON
+            return ResponseEntity.ok(lastLines);
         } catch (IOException e) {
             log.error("Error leyendo logs: {}", e.getMessage());
             return ResponseEntity.internalServerError().build();
@@ -54,6 +58,13 @@ public class LogController {
 
     @GetMapping("/files")
     public ResponseEntity<List<LogFileInfo>> getLogFiles() {
+
+        Path root = Paths.get(logPathDir);
+        if (!Files.exists(root) || !Files.isDirectory(root)) {
+            log.error("La ruta de logs no es válida: {}", logPathDir);
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
         try (Stream<Path> paths = Files.list(Paths.get(logPathDir))) {
             List<LogFileInfo> files = paths
                     .filter(Files::isRegularFile)
@@ -67,7 +78,7 @@ public class LogController {
                             return null;
                         }
                     })
-                    .filter(Objects::nonNull)  
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(files);
         } catch (IOException e) {

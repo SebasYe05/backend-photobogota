@@ -5,6 +5,7 @@ import com.photobogota.api.dto.LoginResponseDTO;
 import com.photobogota.api.dto.LogoutResponseDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
+import com.photobogota.api.dto.UsuarioResumenDTO;
 
 /**
  * Interfaz para el servicio de autenticación.
@@ -43,4 +44,12 @@ public interface IAuthService {
      * @return DTO con el mensaje de confirmación
      */
     LogoutResponseDTO logout(String refreshToken);
+
+    /**
+     * Obtiene un resumen de los datos del usuario autenticado.
+     * 
+     * @param nombreUsuario El nombre de usuario del usuario autenticado
+     * @return DTO con los datos básicos del usuario (nombre, foto, rol)
+     */
+    UsuarioResumenDTO getResumenUsuario(String nombreUsuario);
 }

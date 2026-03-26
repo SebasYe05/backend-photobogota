@@ -15,6 +15,7 @@ import com.photobogota.api.dto.LoginResponseDTO;
 import com.photobogota.api.dto.LogoutResponseDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
+import com.photobogota.api.dto.UsuarioResumenDTO;
 import com.photobogota.api.exception.EmailAlreadyExistsException;
 import com.photobogota.api.exception.InvalidCredentialsException;
 import com.photobogota.api.exception.UsernameAlreadyExistsException;
@@ -22,6 +23,7 @@ import com.photobogota.api.mapper.UsuarioMapper;
 import com.photobogota.api.model.Miembro;
 import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.UsuarioAuth;
+import com.photobogota.api.model.Usuario;
 import com.photobogota.api.repository.UsuarioAuthRepository;
 import com.photobogota.api.repository.UsuarioRepository;
 
@@ -134,7 +136,7 @@ public class AuthServiceImpl implements IAuthService {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("rol", usuario.getRol().name());
         extraClaims.put("email", usuario.getEmail());
-        
+
         String token = jwtService.generarToken(extraClaims, usuario.getNombreUsuario());
 
         // 5. Generar el refresh token
@@ -202,7 +204,8 @@ public class AuthServiceImpl implements IAuthService {
 
     /**
      * Cierra la sesión del usuario revocando el refresh token.
-     * Invalida el refresh token proporcionado para que no pueda ser usado nuevamente.
+     * Invalida el refresh token proporcionado para que no pueda ser usado
+     * nuevamente.
      * 
      * @param refreshToken El token de refresh a revocar
      * @return DTO con el mensaje de confirmación
@@ -210,14 +213,61 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public LogoutResponseDTO logout(String refreshToken) {
         log.info("Intentando cerrar sesión con refresh token");
-        
+
         // Revocar el refresh token
         refreshTokenService.revocarToken(refreshToken);
-        
+
         log.info("Sesión cerrada exitosamente");
-        
+
         return LogoutResponseDTO.builder()
                 .mensaje("Sesión cerrada exitosamente")
+                .build();
+    }
+
+    /**
+     * Obtiene un resumen de los datos del usuario autenticado.
+     * Busca el usuario por nombre de usuario y retorna sus datos básicos.
+     * 
+     * @param nombreUsuario El nombre de usuario del usuario autenticado
+     * @return DTO con los datos básicos del usuario (nombre, foto, rol)
+     */
+    @Override
+    public UsuarioResumenDTO getResumenUsuario(String nombreUsuario) {
+        log.info("Obteniendo resumen del usuario: {}", nombreUsuario);
+
+        // Buscar el usuario por nombre de usuario
+        UsuarioAuth usuarioAuth = usuarioAuthRepository.findByNombreUsuario(nombreUsuario)
+                .orElseThrow(() -> new InvalidCredentialsException("Usuario no encontrado"));
+
+        // Obtener el perfil del usuario desde la colección de usuarios
+        String nombresCompletos = null;
+        String fotoPerfil = null;
+        Integer nivel = null;
+
+        if (usuarioAuth.getId() != null) {
+            Optional<?> usuarioOpt = usuarioRepository.findById(usuarioAuth.getId());
+            if (usuarioOpt.isPresent()) {
+                Object userObj = usuarioOpt.get();
+                if (userObj instanceof Usuario usuario) { // Pattern Matching de Java 16+
+                    nombresCompletos = usuario.getNombresCompletos();
+                    fotoPerfil = usuario.getFotoPefil();
+
+                    // Si es un Miembro, extraemos el nivel 
+                    if (userObj instanceof Miembro miembro) {
+                        nivel = miembro.getNivel();
+                    }
+                }
+            }
+        }
+
+        log.info("Resumen del usuario obtenido exitosamente");
+
+        return UsuarioResumenDTO.builder()
+                .nombreUsuario(usuarioAuth.getNombreUsuario())
+                .nombresCompletos(nombresCompletos)
+                .fotoPerfil(fotoPerfil)
+                .rol(usuarioAuth.getRol().name())
+                .nivel(nivel) 
                 .build();
     }
 
