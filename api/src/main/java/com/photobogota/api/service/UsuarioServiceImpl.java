@@ -1,9 +1,13 @@
 package com.photobogota.api.service;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.photobogota.api.dto.CambiarContrasenaDTO;
+import com.photobogota.api.dto.CambiarContrasenaResponseDTO;
 import com.photobogota.api.dto.EditarPerfilDTO;
 import com.photobogota.api.dto.PerfilUsuarioDTO;
+import com.photobogota.api.exception.CambioContrasenaException;
 import com.photobogota.api.model.Miembro;
 import com.photobogota.api.model.Usuario;
 import com.photobogota.api.model.UsuarioAuth;
@@ -20,6 +24,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioAuthRepository usuarioAuthRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public PerfilUsuarioDTO editarPerfil(String nombreUsuario, EditarPerfilDTO dto) {
@@ -69,6 +74,40 @@ public class UsuarioServiceImpl implements IUsuarioService {
                 .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
         return construirPerfilDTO(usuario, usuarioAuth);
+    }
+
+    @Override
+    public CambiarContrasenaResponseDTO cambiarContrasena(String nombreUsuario, CambiarContrasenaDTO dto) {
+        log.info("Solicitando cambio de contraseña para el usuario: {}", nombreUsuario);
+
+        // Validar que la nueva contraseña y la confirmación coincidan
+        if (!dto.getNuevaContrasena().equals(dto.getConfirmarContrasena())) {
+            throw new CambioContrasenaException("La nueva contraseña y la confirmación no coinciden");
+        }
+
+        // Buscar el usuario en la colección de auth por nombre de usuario
+        UsuarioAuth usuarioAuth = usuarioAuthRepository.findByNombreUsuario(nombreUsuario)
+                .orElseThrow(() -> new CambioContrasenaException("Usuario no encontrado"));
+
+        // Verificar que la contraseña actual sea correcta
+        if (!passwordEncoder.matches(dto.getContrasenaActual(), usuarioAuth.getContrasena())) {
+            throw new CambioContrasenaException("La contraseña actual es incorrecta");
+        }
+
+        // Verificar que la nueva contraseña sea diferente a la actual
+        if (passwordEncoder.matches(dto.getNuevaContrasena(), usuarioAuth.getContrasena())) {
+            throw new CambioContrasenaException("La nueva contraseña debe ser diferente a la actual");
+        }
+
+        // Actualizar la contraseña
+        usuarioAuth.setContrasena(passwordEncoder.encode(dto.getNuevaContrasena()));
+        usuarioAuthRepository.save(usuarioAuth);
+
+        log.info("Contraseña actualizada exitosamente para el usuario: {}", nombreUsuario);
+
+        return CambiarContrasenaResponseDTO.builder()
+                .mensaje("Contraseña actualizada exitosamente")
+                .build();
     }
 
     /**
