@@ -2,6 +2,8 @@ package com.photobogota.api.service;
 
 import com.photobogota.api.dto.LoginRequestDTO;
 import com.photobogota.api.dto.LoginResponseDTO;
+import com.photobogota.api.dto.RegistroRequestDTO;
+import com.photobogota.api.dto.RegistroResponseDTO;
 
 /**
  * Interfaz para el servicio de autenticación.
@@ -16,4 +18,12 @@ public interface IAuthService {
      * @return DTO con el token JWT y información del usuario
      */
     LoginResponseDTO login(LoginRequestDTO request);
+    
+    /**
+     * Registra un nuevo usuario en el sistema.
+     * 
+     * @param dto DTO con los datos del usuario a registrar
+     * @return DTO con la respuesta del registro
+     */
+    RegistroResponseDTO registrar(RegistroRequestDTO dto);
 }

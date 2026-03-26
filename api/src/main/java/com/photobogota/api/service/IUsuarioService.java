@@ -1,8 +1,11 @@
 package com.photobogota.api.service;
 
-import com.photobogota.api.dto.RegistroRequestDTO;
-import com.photobogota.api.dto.RegistroResponseDTO;
+import com.photobogota.api.dto.EditarPerfilDTO;
+import com.photobogota.api.dto.PerfilUsuarioDTO;
 
 public interface IUsuarioService {
-    RegistroResponseDTO registrar(RegistroRequestDTO dto);
+
+    PerfilUsuarioDTO editarPerfil(String nombreUsuario, EditarPerfilDTO dto);
+    
+    PerfilUsuarioDTO obtenerPerfil(String nombreUsuario);
 }

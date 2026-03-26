@@ -1,5 +1,6 @@
 package com.photobogota.api.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -10,8 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.photobogota.api.dto.LoginRequestDTO;
 import com.photobogota.api.dto.LoginResponseDTO;
+import com.photobogota.api.dto.RegistroRequestDTO;
+import com.photobogota.api.dto.RegistroResponseDTO;
 import com.photobogota.api.service.IAuthService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -25,6 +29,13 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private final IAuthService authService;
+
+    @PostMapping("/register")
+    public ResponseEntity<RegistroResponseDTO> registrar(@Valid @RequestBody RegistroRequestDTO dto) {
+        // Al usar @Valid, Spring revisa las anotaciones (@Email, @NotBlank) del DTO
+        RegistroResponseDTO nuevoUsuario = authService.registrar(dto);
+        return new ResponseEntity<>(nuevoUsuario, HttpStatus.CREATED);
+    }
 
     /**
      * Endpoint para iniciar sesión.
