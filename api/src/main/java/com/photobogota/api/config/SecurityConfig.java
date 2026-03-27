@@ -51,7 +51,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/logs/**").hasRole("ADMIN")
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/v1/actuator/**").permitAll()
-                        .requestMatchers("/api/v1/**").authenticated() // Cualquier otra ruta bajo /api/v1/ requiere autenticación
+                        .requestMatchers("/api/v1/**").authenticated() // Cualquier otra ruta bajo /api/v1/ requiere
+                                                                       // autenticación
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -61,7 +62,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173")); // Tu React
+        
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://192.168.*.*:5173" // Permite cualquier IP de tu red local, asegurarse de que el pc y el dispositivo móvil estén en la misma red Wi-Fi
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
         configuration.setAllowCredentials(true);
