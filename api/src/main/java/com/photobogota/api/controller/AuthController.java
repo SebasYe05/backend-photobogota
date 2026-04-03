@@ -1,5 +1,7 @@
 package com.photobogota.api.controller;
 
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,8 +18,10 @@ import com.photobogota.api.dto.LogoutResponseDTO;
 import com.photobogota.api.dto.RefreshTokenRequestDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
-import com.photobogota.api.service.IAuthService;
+import com.photobogota.api.dto.SolicitarRecuperacionDTO;
 import com.photobogota.api.dto.UsuarioResumenDTO;
+import com.photobogota.api.dto.VerificarCodigoDTO;
+import com.photobogota.api.service.IAuthService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -105,6 +109,33 @@ public class AuthController {
         // token
         UsuarioResumenDTO user = authService.getResumenUsuario(currentUser.getUsername());
         return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Endpoint para solicitar un código de recuperación de contraseña.
+     * Genera un código de 6 dígitos y lo envía por correo electrónico.
+     * 
+     * @param dto DTO con el email del usuario
+     * @return Mensaje de confirmación
+     */
+    @PostMapping("/recuperar-password")
+    public ResponseEntity<Map<String, String>> solicitarRecuperacion(
+            @Valid @RequestBody SolicitarRecuperacionDTO dto) {
+        String mensaje = authService.solicitarRecuperacionContrasena(dto);
+        return ResponseEntity.ok(Map.of("mensaje", mensaje));
+    }
+
+    /**
+     * Endpoint para verificar el código y cambiar la contraseña.
+     * 
+     * @param dto DTO con el email, código y nueva contraseña
+     * @return Mensaje de confirmación
+     */
+    @PostMapping("/verificar-codigo")
+    public ResponseEntity<Map<String, String>> verificarCodigo(
+            @Valid @RequestBody VerificarCodigoDTO dto) {
+        String mensaje = authService.verificarCodigoYCambiarContrasena(dto);
+        return ResponseEntity.ok(Map.of("mensaje", mensaje));
     }
 
 }

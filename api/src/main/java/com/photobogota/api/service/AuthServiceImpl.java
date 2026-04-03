@@ -1,8 +1,10 @@
 package com.photobogota.api.service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.bson.types.ObjectId;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,15 +17,19 @@ import com.photobogota.api.dto.LoginResponseDTO;
 import com.photobogota.api.dto.LogoutResponseDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
+import com.photobogota.api.dto.SolicitarRecuperacionDTO;
 import com.photobogota.api.dto.UsuarioResumenDTO;
+import com.photobogota.api.dto.VerificarCodigoDTO;
 import com.photobogota.api.exception.EmailAlreadyExistsException;
 import com.photobogota.api.exception.InvalidCredentialsException;
 import com.photobogota.api.exception.UsernameAlreadyExistsException;
 import com.photobogota.api.mapper.UsuarioMapper;
+import com.photobogota.api.model.CodigoRecuperacion;
 import com.photobogota.api.model.Miembro;
 import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.UsuarioAuth;
 import com.photobogota.api.model.Usuario;
+import com.photobogota.api.repository.CodigoRecuperacionRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
 import com.photobogota.api.repository.UsuarioRepository;
 
@@ -45,6 +51,8 @@ public class AuthServiceImpl implements IAuthService {
     private final JwtService jwtService;
     private final IRefreshToken refreshTokenService;
     private final PasswordEncoder passwordEncoder;
+    private final CodigoRecuperacionRepository codigoRecuperacionRepository;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -269,6 +277,100 @@ public class AuthServiceImpl implements IAuthService {
                 .rol(usuarioAuth.getRol().name())
                 .nivel(nivel) 
                 .build();
+    }
+
+    /**
+     * Solicita un código de recuperación de contraseña.
+     * Genera un código numérico de 6 dígitos, lo guarda en la base de datos
+     * y envía por correo electrónico al usuario.
+     * 
+     * @param dto DTO con el email del usuario
+     * @return Mensaje de confirmación
+     */
+    @Override
+    public String solicitarRecuperacionContrasena(SolicitarRecuperacionDTO dto) {
+        String email = dto.getEmail();
+        log.info("Solicitando recuperación de contraseña para: {}", email);
+
+        // Verificar que el usuario existe
+        UsuarioAuth usuario = usuarioAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidCredentialsException(
+                        "No existe una cuenta con el email proporcionado"));
+
+        // Eliminar códigos anteriores del mismo email
+        codigoRecuperacionRepository.deleteByEmail(email);
+
+        // Generar código numérico de 6 dígitos
+        String codigo = String.format("%06d", new java.util.Random().nextInt(1000000));
+
+        // Crear el registro del código con fecha de expiración (15 minutos)
+        LocalDateTime ahora = LocalDateTime.now();
+        CodigoRecuperacion codigoRecuperacion = CodigoRecuperacion.builder()
+                .email(email)
+                .codigo(codigo)
+                .fechaCreacion(ahora)
+                .fechaExpiracion(ahora.plusMinutes(15))
+                .usado(false)
+                .build();
+
+        // Guardar el código
+        codigoRecuperacionRepository.save(codigoRecuperacion);
+
+        // Construir el HTML y enviar el correo
+        String htmlContent = emailService.construirHtmlRecuperacion(
+                usuario.getNombreUsuario(), codigo);
+        emailService.enviarCorreoHtml(email, "Recuperar Contraseña - PhotoBogota", htmlContent);
+
+        log.info("Código de recuperación enviado exitosamente a: {}", email);
+        return "Se ha enviado un código de verificación a tu correo electrónico";
+    }
+
+    /**
+     * Verifica el código de recuperación y cambia la contraseña del usuario.
+     * 
+     * @param dto DTO con el email, código y nueva contraseña
+     * @return Mensaje de confirmación
+     */
+    @Override
+    public String verificarCodigoYCambiarContrasena(VerificarCodigoDTO dto) {
+        String email = dto.getEmail();
+        String codigoIngresado = dto.getCodigo();
+        String nuevaContrasena = dto.getNuevaContrasena();
+
+        log.info("Verificando código de recuperación para: {}", email);
+
+        // Buscar el código de recuperación
+        CodigoRecuperacion codigoRecuperacion = codigoRecuperacionRepository
+                .findByEmailAndCodigo(email, codigoIngresado)
+                .orElseThrow(() -> new InvalidCredentialsException(
+                        "Código de verificación inválido"));
+
+        // Verificar si el código ya fue usado
+        if (codigoRecuperacion.isUsado()) {
+            throw new InvalidCredentialsException(
+                    "El código de verificación ya ha sido utilizado");
+        }
+
+        // Verificar si el código ha expirado
+        if (codigoRecuperacion.estaExpirado()) {
+            throw new InvalidCredentialsException(
+                    "El código de verificación ha expirado. Por favor, solicita uno nuevo");
+        }
+
+        // Marcar el código como usado
+        codigoRecuperacion.setUsado(true);
+        codigoRecuperacionRepository.save(codigoRecuperacion);
+
+        // Buscar el usuario y actualizar la contraseña
+        UsuarioAuth usuario = usuarioAuthRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidCredentialsException(
+                        "Usuario no encontrado"));
+
+        usuario.setContrasena(passwordEncoder.encode(nuevaContrasena));
+        usuarioAuthRepository.save(usuario);
+
+        log.info("Contraseña actualizada exitosamente para: {}", email);
+        return "Contraseña actualizada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña";
     }
 
 }

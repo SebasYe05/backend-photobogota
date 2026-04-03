@@ -5,7 +5,9 @@ import com.photobogota.api.dto.LoginResponseDTO;
 import com.photobogota.api.dto.LogoutResponseDTO;
 import com.photobogota.api.dto.RegistroRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
+import com.photobogota.api.dto.SolicitarRecuperacionDTO;
 import com.photobogota.api.dto.UsuarioResumenDTO;
+import com.photobogota.api.dto.VerificarCodigoDTO;
 
 /**
  * Interfaz para el servicio de autenticación.
@@ -52,4 +54,21 @@ public interface IAuthService {
      * @return DTO con los datos básicos del usuario (nombre, foto, rol)
      */
     UsuarioResumenDTO getResumenUsuario(String nombreUsuario);
+
+    /**
+     * Solicita un código de recuperación de contraseña.
+     * Genera un código, lo guarda y envía por correo electrónico.
+     * 
+     * @param dto DTO con el email del usuario
+     * @return Mensaje de confirmación
+     */
+    String solicitarRecuperacionContrasena(SolicitarRecuperacionDTO dto);
+
+    /**
+     * Verifica el código y cambia la contraseña del usuario.
+     * 
+     * @param dto DTO con el email, código y nueva contraseña
+     * @return Mensaje de confirmación
+     */
+    String verificarCodigoYCambiarContrasena(VerificarCodigoDTO dto);
 }
