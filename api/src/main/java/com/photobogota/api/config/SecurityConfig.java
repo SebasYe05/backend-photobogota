@@ -36,28 +36,43 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/v1/usuarios/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/email/envio").permitAll()
-                        .requestMatchers("/api/v1/admin/crear-admin").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/admin/logs/**").hasRole("ADMIN")
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/api/v1/actuator/**").permitAll()
-                        .requestMatchers("/api/v1/**").authenticated() // Cualquier otra ruta bajo /api/v1/ requiere
-                                                                       // autenticación
-                        .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+   @Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        .cors(Customizer.withDefaults())
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(auth -> auth
 
-        return http.build();
-    }
+            // Permite todas las peticiones OPTIONS (preflight CORS)
+            // El navegador hace esto antes de un POST, si lo bloqueamos → CORS falla
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+            // Rutas públicas — no requieren token JWT
+            .requestMatchers(
+                "/api/v1/auth/**",
+                "/api/v1/usuarios/**",
+                "/actuator/**",
+                "/api/v1/actuator/**"
+            ).permitAll()
+
+            // Rutas exclusivas para ADMIN
+            .requestMatchers(
+                "/api/v1/admin/crear-admin",
+                "/api/v1/admin/logs/**"
+            ).hasRole("ADMIN")
+
+            //Cualquier otra ruta bajo /api/v1/ requiere token JWT
+            .requestMatchers("/api/v1/**").authenticated()
+
+            //Cualquier otra ruta no definida también requiere autenticación
+            .anyRequest().authenticated()
+        )
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+    return http.build();
+}
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
