@@ -94,21 +94,21 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    /** 
-     * Endpoint para obtener un resumen de los datos del usuario autenticado.
-     * Usa @AuthenticationPrincipal para acceder al usuario autenticado desde el token JWT.
-     * 
-     * @return UsuarioResumenDTO con los datos básicos del usuario (nombre, foto, rol)
-     * @throws InvalidCredentialsException Si el usuario no se encuentra
-     */
     @GetMapping("/me")
     public ResponseEntity<UsuarioResumenDTO> obtenerUsuarioAutenticado(
             @AuthenticationPrincipal UserDetails currentUser) {
 
-        // El service busca los datos básicos (nombre, foto, rol) usando el username del
-        // token
-        UsuarioResumenDTO user = authService.getResumenUsuario(currentUser.getUsername());
-        return ResponseEntity.ok(user);
+        if (currentUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            UsuarioResumenDTO user = authService.getResumenUsuario(currentUser.getUsername());
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            System.out.println("Error en getResumenUsuario: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     /**
