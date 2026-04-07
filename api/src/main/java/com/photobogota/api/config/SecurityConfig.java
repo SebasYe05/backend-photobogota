@@ -36,52 +36,54 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-   @Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http
-        .cors(Customizer.withDefaults())
-        .csrf(csrf -> csrf.disable())
-        .sessionManagement(session -> session
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(auth -> auth
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .cors(Customizer.withDefaults())
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
 
-            // Permite todas las peticiones OPTIONS (preflight CORS)
-            // El navegador hace esto antes de un POST, si lo bloqueamos → CORS falla
-            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Permite todas las peticiones OPTIONS (preflight CORS)
+                        // El navegador hace esto antes de un POST, si lo bloqueamos → CORS falla
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-            // Rutas públicas — no requieren token JWT
-            .requestMatchers(
-                "/api/v1/auth/**",
-                "/api/v1/usuarios/**",
-                "/actuator/**",
-                "/api/v1/actuator/**"
-            ).permitAll()
+                        .requestMatchers("/api/v1/auth/me").authenticated()
 
-            // Rutas exclusivas para ADMIN
-            .requestMatchers(
-                "/api/v1/admin/crear-admin",
-                "/api/v1/admin/logs/**"
-            ).hasRole("ADMIN")
+                        // Rutas públicas — no requieren token JWT
+                        .requestMatchers(
+                                "/api/v1/auth/**",
+                                "/api/v1/usuarios/**",
+                                "/actuator/**",
+                                "/api/v1/actuator/**")
+                        .permitAll()
 
-            //Cualquier otra ruta bajo /api/v1/ requiere token JWT
-            .requestMatchers("/api/v1/**").authenticated()
+                        // Rutas exclusivas para ADMIN
+                        .requestMatchers(
+                                "/api/v1/admin/crear-admin",
+                                "/api/v1/admin/logs/**")
+                        .hasRole("ADMIN")
 
-            //Cualquier otra ruta no definida también requiere autenticación
-            .anyRequest().authenticated()
-        )
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        // Cualquier otra ruta bajo /api/v1/ requiere token JWT
+                        .requestMatchers("/api/v1/**").authenticated()
 
-    return http.build();
-}
+                        // Cualquier otra ruta no definida también requiere autenticación
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
-                "http://192.168.*.*:5173" // Permite cualquier IP de tu red local, asegurarse de que el pc y el dispositivo móvil estén en la misma red Wi-Fi
+                "http://192.168.*.*:5173" // Permite cualquier IP de tu red local, asegurarse de que el pc y el
+                                          // dispositivo móvil estén en la misma red Wi-Fi
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
