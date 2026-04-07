@@ -16,10 +16,11 @@ public class SpotResponseDTO {
     private String recomendacion;
     private String tipsFoto;
     private List<String> imagenes;
-    private String imagen;          // primera imagen (comodidad para el front)
+    private String imagen;
     private Double rating;
     private Integer totalResenas;
-    private String creadorUsername;
+    private String usuarioId;
+    private String createdAt;
     private List<ResenaResponseDTO> resenas;
 
     @Data

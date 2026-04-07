@@ -34,7 +34,7 @@ public class SpotController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SOCIO', 'MODERADOR')")
+    @PreAuthorize("hasAnyRole('MIEMBRO', 'SOCIO', 'MODERADOR')")
     public ResponseEntity<SpotResponseDTO> crearSpot(
             @Valid @RequestBody CrearSpotRequestDTO request,
             @AuthenticationPrincipal UserDetails userDetails) {

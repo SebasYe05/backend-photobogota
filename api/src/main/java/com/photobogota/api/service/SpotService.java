@@ -54,7 +54,7 @@ public class SpotService {
         spot.setTipsFoto(request.getTipsFoto());
         spot.setCreadorUsername(creadorUsername);
 
-        if (request.getImagenes() != null) {
+        if (request.getImagenes() != null && !request.getImagenes().isEmpty()) {
             spot.setImagenes(request.getImagenes());
         }
 
