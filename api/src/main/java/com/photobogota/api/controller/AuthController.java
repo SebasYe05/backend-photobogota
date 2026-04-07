@@ -118,7 +118,7 @@ public class AuthController {
      * @param dto DTO con el email del usuario
      * @return Mensaje de confirmación
      */
-    @PostMapping("/recuperar-password")
+    @PostMapping("/passwords/recovery-request")
     public ResponseEntity<Map<String, String>> solicitarRecuperacion(
             @Valid @RequestBody SolicitarRecuperacionDTO dto) {
         String mensaje = authService.solicitarRecuperacionContrasena(dto);
@@ -131,7 +131,7 @@ public class AuthController {
      * @param dto DTO con el email, código y nueva contraseña
      * @return Mensaje de confirmación
      */
-    @PostMapping("/verificar-codigo")
+    @PostMapping("/passwords/reset")
     public ResponseEntity<Map<String, String>> verificarCodigo(
             @Valid @RequestBody VerificarCodigoDTO dto) {
         String mensaje = authService.verificarCodigoYCambiarContrasena(dto);
