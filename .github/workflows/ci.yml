@@ -34,4 +34,4 @@ jobs:
       working-directory: api
 
     - name: Build Docker Image
-      run: docker build -t backend-photobogota:latest .
+      run: docker build -t backend-photobogota:latest ./api
