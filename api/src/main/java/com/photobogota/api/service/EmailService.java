@@ -90,10 +90,10 @@ public class EmailService {
                         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
                     }
                     .header {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        background: #9b8dcf;
                         padding: 30px;
                         text-align: center;
-                    }
+                    }   
                     .header h1 {
                         color: #ffffff;
                         font-size: 28px;
@@ -169,7 +169,7 @@ public class EmailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <div class="logo">📸 PhotoBogota</div>
+                        <div class="logo"> PhotoBogota</div>
                         <h1>Recuperar Contraseña</h1>
                         <p>Restablece el acceso a tu cuenta</p>
                     </div>
@@ -185,7 +185,7 @@ public class EmailService {
                         <p>Este código <strong>expira en 15 minutos</strong> por seguridad.</p>
 
                         <div class="warning">
-                            <p>⚠️ <strong>Importante:</strong> Si no solicitaste este cambio,
+                            <p> <strong>Importante:</strong> Si no solicitaste este cambio,
                             puedes ignorar este correo. Tu contraseña actual seguirá funcionando.</p>
                         </div>
                     </div>
