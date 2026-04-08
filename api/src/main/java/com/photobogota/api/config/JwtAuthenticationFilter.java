@@ -67,6 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // 3. Extraer el nombre de usuario del token
             nombreUsuario = jwtService.extraerNombreUsuario(jwt);
+            logger.info("DEBUG: Token recibido. Usuario extraído: " + nombreUsuario);
 
             // 4. Si hay un nombre de usuario y no hay autenticación actual, validar el
             // token
@@ -74,9 +75,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 // 5. Cargar los detalles del usuario desde la base de datos
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(nombreUsuario);
+                logger.info("DEBUG: Usuario cargado de BD: " + userDetails.getUsername());
 
                 // 6. Validar el token contra los detalles del usuario
                 if (jwtService.esTokenValido(jwt, userDetails.getUsername())) {
+                    logger.info("DEBUG: Token válido para usuario: " + userDetails.getUsername());
 
                     // 7. Crear token de autenticación con los detalles del usuario
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -89,13 +92,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     // 9. Establecer la autenticación en el SecurityContext
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    logger.info("DEBUG: Autenticación establecida en SecurityContext");
+                } else {
+                    logger.warn("DEBUG: Token inválido para usuario: " + userDetails.getUsername());
                 }
+            } else if (nombreUsuario == null) {
+                logger.warn("DEBUG: No se pudo extraer nombre de usuario del token");
+            } else {
+                logger.warn("DEBUG: Ya hay autenticación en SecurityContext");
             }
         } catch (Exception e) {
             // Si hay cualquier error con el token, continuar sin autenticar
             // El filtro no debe bloquear la solicitud, sino dejar que Spring Security lo
             // haga
-            logger.warn("Token JWT inválido o expirado en ruta: " + request.getRequestURI());
+            logger.warn("Token JWT inválido o expirado en ruta: " + request.getRequestURI()
+                    + " - Error: " + e.getMessage());
+            e.printStackTrace();
         }
 
         // 10. Continuar con la cadena de filtros
