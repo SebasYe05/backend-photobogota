@@ -3,6 +3,7 @@ package com.photobogota.api.service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.bson.types.ObjectId;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -299,10 +300,16 @@ public class AuthServiceImpl implements IAuthService {
         String email = dto.getEmail();
         log.info("Solicitando recuperación de contraseña para: {}", email);
 
-        // Verificar que el usuario existe
-        UsuarioAuth usuario = usuarioAuthRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException(
-                        "No existe una cuenta con el email proporcionado"));
+        // Buscar el usuario (si no existe, no revelar para mayor seguridad)
+        Optional<UsuarioAuth> usuarioOpt = usuarioAuthRepository.findByEmail(email);
+        
+        if (usuarioOpt.isEmpty()) {
+            // No revelar si el email existe o no
+            log.info("Solicitud de recuperación para email no registrado: {}", email);
+            return "Se ha enviado un código de verificación a tu correo electrónico";
+        }
+        
+        UsuarioAuth usuario = usuarioOpt.get();
 
         // Eliminar códigos anteriores del mismo email
         codigoRecuperacionRepository.deleteByEmail(email);
