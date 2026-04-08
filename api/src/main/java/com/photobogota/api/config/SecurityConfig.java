@@ -52,8 +52,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
-                                "/api/v1/auth/recuperar-password",
-                                "/api/v1/auth/verificar-codigo",
+                                "/api/v1/auth/passwords/recovery-request",
+                                "/api/v1/auth/passwords/reset",
                                 "/api/v1/auth/refresh")
                         .permitAll()
 
