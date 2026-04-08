@@ -3,7 +3,6 @@ package com.photobogota.api.service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import org.bson.types.ObjectId;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -129,27 +128,29 @@ public class AuthServiceImpl implements IAuthService {
             throw new InvalidCredentialsException("Credenciales inválidas");
         }
 
-        // 3. Obtener el nivel del usuario desde la colección de usuarios
-        // Solo los miembros tienen nivel
+        // 3. Obtener el perfil completo del usuario desde la colección de usuarios
+        Usuario perfilUsuario = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+
+        // 4. Obtener el nivel del usuario (solo los miembros tienen nivel)
         Integer nivel = null;
-        if (usuario.getId() != null && usuario.getRol() == Rol.MIEMBRO) {
-            Optional<?> usuarioOpt = usuarioRepository.findById(usuario.getId());
-            if (usuarioOpt.isPresent() && usuarioOpt.get() instanceof Miembro) {
-                nivel = ((Miembro) usuarioOpt.get()).getNivel();
-            }
+        if (usuario.getRol() == Rol.MIEMBRO && perfilUsuario instanceof Miembro) {
+            nivel = ((Miembro) perfilUsuario).getNivel();
+        } else {
+            nivel = 1; // Valor por defecto para otros tipos de usuario
         }
 
-        // 4. Generar el token JWT con claims adicionales (rol y email)
+        // 5. Generar el token JWT con claims adicionales (rol y email)
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("rol", usuario.getRol().name());
         extraClaims.put("email", usuario.getEmail());
 
         String token = jwtService.generarToken(extraClaims, usuario.getNombreUsuario());
 
-        // 5. Generar el refresh token
+        // 6. Generar el refresh token
         String refreshToken = refreshTokenService.crearRefreshToken(usuario.getEmail());
 
-        // 6. Mapear y retornar la respuesta
+        // 7. Mapear y retornar la respuesta con TODOS los datos del perfil
         return LoginResponseDTO.builder()
                 .token(token)
                 .refreshToken(refreshToken)
@@ -158,6 +159,10 @@ public class AuthServiceImpl implements IAuthService {
                 .rol(usuario.getRol().name())
                 .nivel(nivel)
                 .mensaje("Autenticación exitosa")
+                .nombresCompletos(perfilUsuario.getNombresCompletos())
+                .telefono(perfilUsuario.getTelefono())
+                .biografia(perfilUsuario.getBiografia())
+                .fotoPerfil(perfilUsuario.getFotoPefil())
                 .build();
     }
 
@@ -178,26 +183,29 @@ public class AuthServiceImpl implements IAuthService {
         UsuarioAuth usuario = usuarioAuthRepository.findByEmail(email)
                 .orElseThrow(() -> new InvalidCredentialsException("Usuario no encontrado"));
 
-        // 3. Obtener el nivel del usuario
+        // 3. Obtener el perfil completo del usuario
+        Usuario perfilUsuario = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+
+        // 4. Obtener el nivel del usuario
         Integer nivel = null;
-        if (usuario.getId() != null && usuario.getRol() == Rol.MIEMBRO) {
-            Optional<?> usuarioOpt = usuarioRepository.findById(usuario.getId());
-            if (usuarioOpt.isPresent() && usuarioOpt.get() instanceof Miembro) {
-                nivel = ((Miembro) usuarioOpt.get()).getNivel();
-            }
+        if (usuario.getRol() == Rol.MIEMBRO && perfilUsuario instanceof Miembro) {
+            nivel = ((Miembro) perfilUsuario).getNivel();
+        } else {
+            nivel = 1; // Valor por defecto
         }
 
-        // 4. Generar el nuevo token JWT
+        // 5. Generar el nuevo token JWT
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("rol", usuario.getRol().name());
         extraClaims.put("email", usuario.getEmail());
 
         String newToken = jwtService.generarToken(extraClaims, usuario.getNombreUsuario());
 
-        // 5. Generar un nuevo refresh token (esto también invalida el anterior)
+        // 6. Generar un nuevo refresh token (esto también invalida el anterior)
         String newRefreshToken = refreshTokenService.crearRefreshToken(usuario.getEmail());
 
-        // 6. Retornar la respuesta con los nuevos tokens
+        // 7. Retornar la respuesta con los nuevos tokens Y TODOS los datos del perfil
         return LoginResponseDTO.builder()
                 .token(newToken)
                 .refreshToken(newRefreshToken)
@@ -206,6 +214,10 @@ public class AuthServiceImpl implements IAuthService {
                 .rol(usuario.getRol().name())
                 .nivel(nivel)
                 .mensaje("Token refrescado exitosamente")
+                .nombresCompletos(perfilUsuario.getNombresCompletos())
+                .telefono(perfilUsuario.getTelefono())
+                .biografia(perfilUsuario.getBiografia())
+                .fotoPerfil(perfilUsuario.getFotoPefil())
                 .build();
     }
 
@@ -236,7 +248,8 @@ public class AuthServiceImpl implements IAuthService {
      * Busca el usuario por nombre de usuario y retorna sus datos básicos.
      * 
      * @param nombreUsuario El nombre de usuario del usuario autenticado
-     * @return DTO con los datos básicos del usuario (nombre, foto, rol)
+     * @return DTO con los datos completos del usuario (nombre, foto, rol, email,
+     *         teléfono, biografía)
      */
     @Override
     public UsuarioResumenDTO getResumenUsuario(String nombreUsuario) {
@@ -246,35 +259,30 @@ public class AuthServiceImpl implements IAuthService {
         UsuarioAuth usuarioAuth = usuarioAuthRepository.findByNombreUsuario(nombreUsuario)
                 .orElseThrow(() -> new InvalidCredentialsException("Usuario no encontrado"));
 
-        // Obtener el perfil del usuario desde la colección de usuarios
-        String nombresCompletos = null;
-        String fotoPerfil = null;
+        // Obtener el perfil completo del usuario desde la colección de usuarios
+        Usuario perfilUsuario = usuarioRepository.findById(usuarioAuth.getId())
+                .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
+
+        // Obtener el nivel si es miembro
         Integer nivel = null;
-
-        if (usuarioAuth.getId() != null) {
-            Optional<?> usuarioOpt = usuarioRepository.findById(usuarioAuth.getId());
-            if (usuarioOpt.isPresent()) {
-                Object userObj = usuarioOpt.get();
-                if (userObj instanceof Usuario usuario) { // Pattern Matching de Java 16+
-                    nombresCompletos = usuario.getNombresCompletos();
-                    fotoPerfil = usuario.getFotoPefil();
-
-                    // Si es un Miembro, extraemos el nivel 
-                    if (userObj instanceof Miembro miembro) {
-                        nivel = miembro.getNivel();
-                    }
-                }
-            }
+        if (usuarioAuth.getRol() == Rol.MIEMBRO && perfilUsuario instanceof Miembro) {
+            nivel = ((Miembro) perfilUsuario).getNivel();
+        } else {
+            nivel = 1; // Valor por defecto
         }
 
-        log.info("Resumen del usuario obtenido exitosamente");
+        log.info("Resumen del usuario obtenido exitosamente: {}", nombreUsuario);
 
+        // Construir el DTO con TODOS los datos
         return UsuarioResumenDTO.builder()
                 .nombreUsuario(usuarioAuth.getNombreUsuario())
-                .nombresCompletos(nombresCompletos)
-                .fotoPerfil(fotoPerfil)
+                .nombresCompletos(perfilUsuario.getNombresCompletos())
+                .email(usuarioAuth.getEmail())
+                .telefono(perfilUsuario.getTelefono())
+                .biografia(perfilUsuario.getBiografia())
+                .fotoPerfil(perfilUsuario.getFotoPefil())
                 .rol(usuarioAuth.getRol().name())
-                .nivel(nivel) 
+                .nivel(nivel)
                 .build();
     }
 

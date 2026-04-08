@@ -11,4 +11,7 @@ public class UsuarioResumenDTO {
     private String fotoPerfil;
     private String rol;
     private Integer nivel;
+    private String email;
+    private String biografia;
+    private String telefono;
 }

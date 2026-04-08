@@ -45,6 +45,11 @@ public class LoginResponseDTO {
      */
     private Integer nivel;
     
+    private String nombresCompletos;  
+    private String telefono;          
+    private String biografia;          
+    private String fotoPerfil;   
+
     /**
      * Mensaje de éxito
      */
