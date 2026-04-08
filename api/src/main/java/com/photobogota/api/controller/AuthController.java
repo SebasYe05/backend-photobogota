@@ -26,7 +26,6 @@ import com.photobogota.api.service.IAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
@@ -36,14 +35,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Validated
-@CrossOrigin(origins = "http://localhost:5173") // Permitir CORS para el frontend en desarrollo
 public class AuthController {
 
     private final IAuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<RegistroResponseDTO> registrar(@Valid @RequestBody RegistroRequestDTO dto) {
-        // Al usar @Valid, Spring revisa las anotaciones (@Email, @NotBlank) del DTO
         RegistroResponseDTO nuevoUsuario = authService.registrar(dto);
         return new ResponseEntity<>(nuevoUsuario, HttpStatus.CREATED);
     }
@@ -73,7 +70,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    /**
+     /**
      * Endpoint para cerrar sesión.
      * Revoca el refresh token para invalidar la sesión del usuario.
      * 
@@ -82,8 +79,6 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponseDTO> logout(@RequestBody(required = false) RefreshTokenRequestDTO request) {
-        // Si no hay token en el cuerpo, igual devolvemos OK para que el front limpie su
-        // estado
         if (request == null || request.getRefreshToken() == null || request.getRefreshToken().isEmpty()) {
             return ResponseEntity.ok(LogoutResponseDTO.builder()
                     .mensaje("Sesión cerrada localmente")
@@ -94,6 +89,11 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Endpoint para obtener los datos del usuario autenticado.
+     * @param currentUser
+     * @return UsuarioResumenDTO con los datos del usuario autenticado
+     */
     @GetMapping("/me")
     public ResponseEntity<UsuarioResumenDTO> obtenerUsuarioAutenticado(
             @AuthenticationPrincipal UserDetails currentUser) {
@@ -106,12 +106,11 @@ public class AuthController {
             UsuarioResumenDTO user = authService.getResumenUsuario(currentUser.getUsername());
             return ResponseEntity.ok(user);
         } catch (Exception e) {
-            System.out.println("Error en getResumenUsuario: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 
-    /**
+     /**
      * Endpoint para solicitar un código de recuperación de contraseña.
      * Genera un código de 6 dígitos y lo envía por correo electrónico.
      * 
@@ -125,7 +124,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("mensaje", mensaje));
     }
 
-    /**
+     /**
      * Endpoint para verificar el código y cambiar la contraseña.
      * 
      * @param dto DTO con el email, código y nueva contraseña

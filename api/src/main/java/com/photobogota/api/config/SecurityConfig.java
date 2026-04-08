@@ -46,14 +46,22 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // Permite todas las peticiones OPTIONS (preflight CORS)
-                        // El navegador hace esto antes de un POST, si lo bloqueamos → CORS falla
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Rutas públicas de autenticación (solo registro y login)
+                        .requestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/recuperar-password",
+                                "/api/v1/auth/verificar-codigo",
+                                "/api/v1/auth/refresh")
+                        .permitAll()
+
+                        // Ruta /me requiere autenticación (no está en las públicas)
                         .requestMatchers("/api/v1/auth/me").authenticated()
 
-                        // Rutas públicas — no requieren token JWT
+                        // Otras rutas públicas
                         .requestMatchers(
-                                "/api/v1/auth/**",
                                 "/api/v1/usuarios/**",
                                 "/actuator/**",
                                 "/api/v1/actuator/**")
@@ -82,12 +90,13 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
-                "http://192.168.*.*:5173" // Permite cualquier IP de tu red local, asegurarse de que el pc y el
-                                          // dispositivo móvil estén en la misma red Wi-Fi
-        ));
+                "http://192.168.*.*:5173",
+                "http://localhost:3000", 
+                "http://127.0.0.1:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(Arrays.asList("Authorization")); // Exponer el header Authorization
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
