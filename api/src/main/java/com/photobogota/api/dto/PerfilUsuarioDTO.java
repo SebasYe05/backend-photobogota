@@ -12,6 +12,7 @@ public class PerfilUsuarioDTO {
     private String nombreUsuario;
     private String nombresCompletos;
     private String email;
+    private String telefono;
     private String fotoPefil;
     private String biografia;
     
