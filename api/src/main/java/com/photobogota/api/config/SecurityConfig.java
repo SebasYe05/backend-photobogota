@@ -47,6 +47,17 @@ public class SecurityConfig {
                                                 // Preflight CORS
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Rutas públicas de autenticación (solo registro y login)
+                        .requestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/passwords/recovery-request",
+                                "/api/v1/auth/passwords/reset",
+                                "/api/v1/auth/refresh",
+                                "/api/v1/aspirantes",
+                                "/api/v1/aspirantes/**"
+                        )
+                        .permitAll()
                                                 // Rutas públicas de autenticación (solo registro y login)
                                                 .requestMatchers(
                                                                 "/api/v1/auth/login",

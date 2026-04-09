@@ -1,39 +1,50 @@
-package com.photobogota.api.model;
+package com.photobogota.api.dto;
 
 import java.time.LocalDate;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Builder
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "aspirantes_socios")
-public class Aspirante {
+public class SolicitudAspiranteDTO {
 
-    @Id
-    private String id;
+    @NotBlank(message = "Los nombres son obligatorios")
     private String nombres;
-    private String apellidos;
-    private String email;
-    private String telefono;
-    private String direccion;
-    private String nit;
-    private LocalDate fechaNacimiento;
-    private String nombrePropietario;
-    private String razonSocial;
-    private String categoria;
-    private String localidad;
-    private String rutaArchivo;
-    private String tipoArchivo;
-    private String estado;
-    private LocalDate fechaSolicitud;
-    private String codigo;
 
+    @NotBlank(message = "Los apellidos son obligatorios")
+    private String apellidos;
+
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "El email debe ser válido")
+    private String email;
+
+    private String telefono;
+
+    private String direccion;
+
+    @NotBlank(message = "El NIT/RUT es obligatorio")
+    private String nit;
+
+    @NotNull(message = "La fecha de nacimiento es obligatoria")
+    private LocalDate fechaNacimiento;
+
+    private String nombrePropietario;
+
+    private String razonSocial;
+
+    private String categoria;
+
+    private String localidad;
+
+    private String rutaArchivo;
+
+    private String tipoArchivo;
 }
