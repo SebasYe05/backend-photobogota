@@ -1,23 +1,18 @@
-package com.photobogota.api.model;
+package com.photobogota.api.dto;
 
 import java.time.LocalDate;
-
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Builder
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "aspirantes_socios")
-public class Aspirante {
+public class AspiranteResponseDTO {
 
-    @Id
     private String id;
     private String nombres;
     private String apellidos;
@@ -34,5 +29,4 @@ public class Aspirante {
     private String tipoArchivo;
     private String estado;
     private LocalDate fechaSolicitud;
-
 }
