@@ -2,6 +2,8 @@ package com.photobogota.api.dto;
 
 import java.time.LocalDate;
 
+import com.photobogota.api.model.EstadoAspirante;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,6 +29,7 @@ public class AspiranteResponseDTO {
     private String localidad;
     private String rutaArchivo;
     private String tipoArchivo;
-    private String estado;
+    private EstadoAspirante estado;
     private LocalDate fechaSolicitud;
+    private String codigo;
 }

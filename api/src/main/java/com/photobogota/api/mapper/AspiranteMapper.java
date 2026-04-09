@@ -27,6 +27,7 @@ public class AspiranteMapper {
                 .tipoArchivo(aspirante.getTipoArchivo())
                 .estado(aspirante.getEstado())
                 .fechaSolicitud(aspirante.getFechaSolicitud())
+                .codigo(aspirante.getCodigo())
                 .build();
     }
 

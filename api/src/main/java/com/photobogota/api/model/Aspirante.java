@@ -32,7 +32,7 @@ public class Aspirante {
     private String localidad;
     private String rutaArchivo;
     private String tipoArchivo;
-    private String estado;
+    private EstadoAspirante estado;
     private LocalDate fechaSolicitud;
     private String codigo;
 
