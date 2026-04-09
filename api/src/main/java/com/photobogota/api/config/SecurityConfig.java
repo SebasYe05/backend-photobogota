@@ -62,6 +62,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/aspirantes",
                                                                 "/api/v1/aspirantes/**")
                                                 .permitAll()
+                                                //Aspirantes: crear solicitud sin cuenta 
+                                                .requestMatchers(HttpMethod.POST, "/api/v1/aspirantes").permitAll()
 
                                                 // Spots públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/spots/**").permitAll()
