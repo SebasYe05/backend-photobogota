@@ -38,27 +38,18 @@ public class SecurityConfig {
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
                 http
                                 .cors(Customizer.withDefaults())
                                 .csrf(csrf -> csrf.disable())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
-                                                // Preflight CORS
+                                                // PREFILGHT CORS
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Rutas públicas de autenticación (solo registro y login)
-                        .requestMatchers(
-                                "/api/v1/auth/login",
-                                "/api/v1/auth/register",
-                                "/api/v1/auth/passwords/recovery-request",
-                                "/api/v1/auth/passwords/reset",
-                                "/api/v1/auth/refresh",
-                                "/api/v1/aspirantes",
-                                "/api/v1/aspirantes/**"
-                        )
-                        .permitAll()
-                                                // Rutas públicas de autenticación (solo registro y login)
+                                                // RUTAS PÚBLICAS
+                                                // Autenticación
                                                 .requestMatchers(
                                                                 "/api/v1/auth/login",
                                                                 "/api/v1/auth/register",
@@ -67,39 +58,48 @@ public class SecurityConfig {
                                                                 "/api/v1/auth/refresh")
                                                 .permitAll()
 
+                                                // Listado público de aspirantes (y sus detalles)
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/aspirantes",
+                                                                "/api/v1/aspirantes/**")
+                                                .permitAll()
+
+                                                // Spots públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/spots/**").permitAll()
 
-                                                // Perfiles públicos - solo lectura (cualquiera puede ver perfiles)
+                                                // Perfiles públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/perfil/**")
                                                 .permitAll()
 
-                                                // Rutas de monitoreo
+                                                // Monitoreo / Actuator
                                                 .requestMatchers("/actuator/**", "/api/v1/actuator/**").permitAll()
 
-                                                // ========== RUTAS PROTEGIDAS (requieren token) ==========
-                                                // Operaciones sensibles de usuario
+                                                // RUTAS PROTEGIDAS
+                                                // Crear spots
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/spots").authenticated()
 
-                                                // Reseñas - requieren autenticación
+                                                // Crear reseñas
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/spots/*/resenas")
                                                 .authenticated()
 
-                                                .requestMatchers("/api/v1/usuarios/perfil").authenticated() // PUT
-                                                                                                            // editar
-                                                                                                            // perfil
-                                                .requestMatchers("/api/v1/usuarios/me/password").authenticated() // PATCH
-                                                                                                                 // cambiar
-                                                                                                                 // contraseña
-                                                .requestMatchers("/api/v1/auth/me").authenticated() // GET propio perfil
+                                                // Gestión del propio usuario
+                                                .requestMatchers(
+                                                                "/api/v1/usuarios/perfil", // PUT - editar perfil
+                                                                "/api/v1/usuarios/me/password", // PATCH - cambiar
+                                                                                                // contraseña
+                                                                "/api/v1/auth/me" // GET - obtener mi información
+                                                ).authenticated()
 
-                                                // Rutas de ADMIN
+                                                // RUTAS DE ADMINISTRADOR
                                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
-                                                // Todo lo demás bajo /api/v1 requiere autenticación
+                                                // LO DEMÁS bajo /api/v1
+                                                // Cualquier otra ruta dentro de /api/v1 requiere autenticación
                                                 .requestMatchers("/api/v1/**").authenticated()
 
-                                                // Cualquier otra ruta
+                                                // Cualquier otra ruta fuera de /api/v1 (opcional, según tu frontend)
                                                 .anyRequest().authenticated())
+
+                                // Filtro JWT
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();
