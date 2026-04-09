@@ -34,5 +34,6 @@ public class Aspirante {
     private String tipoArchivo;
     private String estado;
     private LocalDate fechaSolicitud;
+    private String codigo;
 
 }
