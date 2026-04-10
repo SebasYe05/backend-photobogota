@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <property name="LOG_PATH" value="logs" />
+    <property name="LOG_PATH" value="${user.dir}/logs" />
     <property name="LOG_FILE" value="${LOG_PATH}/photobogota" />
 
     <!-- Console Appender -->
