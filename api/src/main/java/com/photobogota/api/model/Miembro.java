@@ -6,8 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
+@SuperBuilder
 @EqualsAndHashCode(callSuper = true) // Esto es importante para que los campos de Usuario se consideren en equals() y hashCode()
 @NoArgsConstructor
 @AllArgsConstructor
