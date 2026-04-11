@@ -68,6 +68,9 @@ public class SecurityConfig {
                                                 // Spots públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/spots/**").permitAll()
 
+                                                // Categorías y localidades públicas
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/categorias", "/api/v1/localidades").permitAll()
+
                                                 // Perfiles públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/perfil/**")
                                                 .permitAll()
@@ -91,8 +94,8 @@ public class SecurityConfig {
                                                                 "/api/v1/auth/me" // GET - obtener mi información
                                                 ).authenticated()
 
-                                                // RUTAS DE ADMINISTRADOR
-                                                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                                                // RUTAS DE MODERADOR
+                                                .requestMatchers("/api/v1/moderador/**").hasRole("MOD")
 
                                                 // LO DEMÁS bajo /api/v1
                                                 // Cualquier otra ruta dentro de /api/v1 requiere autenticación

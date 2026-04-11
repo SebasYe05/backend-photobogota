@@ -1,0 +1,36 @@
+package com.photobogota.api.controller;
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.photobogota.api.dto.CategoriaDTO;
+import com.photobogota.api.dto.LocalidadDTO;
+import com.photobogota.api.service.ICategoriaService;
+import com.photobogota.api.service.ILocalidadService;
+
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
+public class CategoriaController {
+
+    private final ICategoriaService categoriaService;
+    private final ILocalidadService localidadService;
+
+    @GetMapping("/categorias")
+    public ResponseEntity<List<CategoriaDTO>> obtenerCategoriasActivas() {
+        return ResponseEntity.ok(categoriaService.obtenerActivos());
+    }
+
+    @GetMapping("/localidades")
+    public ResponseEntity<List<LocalidadDTO>> obtenerLocalidadessActivas() {
+        return ResponseEntity.ok(localidadService.obtenerActivos());
+    }
+}
