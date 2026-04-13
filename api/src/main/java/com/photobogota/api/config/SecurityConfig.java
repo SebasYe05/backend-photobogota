@@ -78,8 +78,10 @@ public class SecurityConfig {
                                                 // Monitoreo / Actuator
                                                 .requestMatchers("/actuator/**", "/api/v1/actuator/**").permitAll()
 
-                                                // RUTAS PROTEGIDAS
-                                                // Crear spots
+                                                // TODAS LAS RUTAS DE ADMIN (forma compacta)
+                                                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+                                                // RUTAS PROTEGIDAS (autenticación requerida)
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/spots").authenticated()
 
                                                 // Crear reseñas
@@ -88,23 +90,21 @@ public class SecurityConfig {
 
                                                 // Gestión del propio usuario
                                                 .requestMatchers(
-                                                                "/api/v1/usuarios/perfil", // PUT - editar perfil
-                                                                "/api/v1/usuarios/me/password", // PATCH - cambiar
-                                                                                                // contraseña
-                                                                "/api/v1/auth/me" // GET - obtener mi información
-                                                ).authenticated()
-
+                                                                "/api/v1/usuarios/perfil",
+                                                                "/api/v1/usuarios/me/password",
+                                                                "/api/v1/auth/me")
+                                                .authenticated()
+                                                
                                                 // RUTAS DE MODERADOR
                                                 .requestMatchers("/api/v1/moderador/**").hasRole("MOD")
+                                                // RUTAS DE ADMINISTRADOR
+                                                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                                                 // LO DEMÁS bajo /api/v1
                                                 // Cualquier otra ruta dentro de /api/v1 requiere autenticación
                                                 .requestMatchers("/api/v1/**").authenticated()
-
-                                                // Cualquier otra ruta fuera de /api/v1 (opcional, según tu frontend)
                                                 .anyRequest().authenticated())
 
-                                // Filtro JWT
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
                 return http.build();

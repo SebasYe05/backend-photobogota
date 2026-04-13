@@ -1,15 +1,16 @@
+// AdminController.java
 package com.photobogota.api.controller;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.photobogota.api.dto.RegistroAdminRequestDTO;
+import com.photobogota.api.dto.CrearUsuarioRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
+import com.photobogota.api.dto.UsuarioListResponseDTO;
 import com.photobogota.api.service.IAdminService;
 
 import jakarta.validation.Valid;
@@ -18,14 +19,36 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class AdminController {
- 
+
     private final IAdminService adminService;
 
-    @PostMapping("/crear-admin")
-    public ResponseEntity<RegistroResponseDTO> crearAdmin(@Valid @RequestBody RegistroAdminRequestDTO dto) {
-        RegistroResponseDTO nuevoAdmin = adminService.registrarAdmin(dto);
-        return new ResponseEntity<>(nuevoAdmin, HttpStatus.CREATED);
+    @PostMapping("/usuarios")
+    public ResponseEntity<RegistroResponseDTO> crearUsuario(@Valid @RequestBody CrearUsuarioRequestDTO dto) {
+        RegistroResponseDTO nuevoUsuario = adminService.crearUsuario(dto);
+        return new ResponseEntity<>(nuevoUsuario, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/usuarios")
+    public ResponseEntity<Page<UsuarioListResponseDTO>> listarUsuarios(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<UsuarioListResponseDTO> usuarios = adminService.listarUsuarios(pageable);
+        return ResponseEntity.ok(usuarios);
+    }
+
+    @PatchMapping("/usuarios/{id}/estado")
+    public ResponseEntity<Void> actualizarEstadoUsuario(
+            @PathVariable String id,
+            @RequestParam boolean activo) {
+        adminService.actualizarEstadoUsuario(id, activo);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/usuarios/{id}")
+    public ResponseEntity<Void> eliminarUsuario(@PathVariable String id) {
+        adminService.eliminarUsuario(id);
+        return ResponseEntity.noContent().build();
     }
 }
