@@ -23,7 +23,7 @@ public class AspiranteServiceImpl implements IAspiranteService {
 
     private final AspiranteRepository aspiranteRepository;
     private final AspiranteMapper aspiranteMapper;
-    private final EmailService emailService;
+    private final IEmailService emailService;
 
     @Override
     public AspiranteResponseDTO crearSolicitud(SolicitudAspiranteDTO request) {

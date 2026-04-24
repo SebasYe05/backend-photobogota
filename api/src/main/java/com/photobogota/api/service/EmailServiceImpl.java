@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-public class EmailService {
+public class EmailServiceImpl implements IEmailService {
 
     @Autowired
     private JavaMailSender mailSender;
@@ -20,6 +20,7 @@ public class EmailService {
     /**
      * Envía un correo electrónico simple (texto plano).
      */
+    @Override
     public void enviarCorreo(String destinatario, String asunto, String cuerpo) {
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setTo(destinatario);
@@ -33,6 +34,7 @@ public class EmailService {
     /**
      * Envía un correo electrónico con contenido HTML.
      */
+    @Override
     public void enviarCorreoHtml(String destinatario, String asunto, String cuerpoHtml) {
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
@@ -53,7 +55,7 @@ public class EmailService {
 
     /**
      * Construye el HTML para el correo de recuperación de contraseña.
-     * 
+     *
      * NOTA: Se usa .replace() en lugar de .formatted() porque el HTML contiene
      * caracteres # en los colores CSS que Java interpreta como especificadores
      * de formato, causando FormatFlagsConversionMismatchException.
@@ -62,6 +64,7 @@ public class EmailService {
      * @param codigo        Código de recuperación
      * @return String con el HTML del correo
      */
+    @Override
     public String construirHtmlRecuperacion(String nombreUsuario, String codigo) {
         return """
             <!DOCTYPE html>

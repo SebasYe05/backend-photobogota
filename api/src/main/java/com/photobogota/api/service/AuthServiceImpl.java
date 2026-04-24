@@ -51,7 +51,7 @@ public class AuthServiceImpl implements IAuthService {
     private final IRefreshToken refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final CodigoRecuperacionRepository codigoRecuperacionRepository;
-    private final EmailService emailService;
+    private final IEmailService emailService;
 
     @Override
     @Transactional
