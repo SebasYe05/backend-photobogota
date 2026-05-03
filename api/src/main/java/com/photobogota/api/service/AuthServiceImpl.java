@@ -1,6 +1,7 @@
 package com.photobogota.api.service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -26,11 +27,14 @@ import com.photobogota.api.mapper.UsuarioMapper;
 import com.photobogota.api.model.CodigoRecuperacion;
 import com.photobogota.api.model.Miembro;
 import com.photobogota.api.model.Rol;
+import com.photobogota.api.model.Sesion;
 import com.photobogota.api.model.UsuarioAuth;
 import com.photobogota.api.model.Usuario;
 import com.photobogota.api.repository.CodigoRecuperacionRepository;
+import com.photobogota.api.repository.SesionRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
 import com.photobogota.api.repository.UsuarioRepository;
+import java.time.Instant;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +56,7 @@ public class AuthServiceImpl implements IAuthService {
     private final PasswordEncoder passwordEncoder;
     private final CodigoRecuperacionRepository codigoRecuperacionRepository;
     private final IEmailService emailService;
+    private final SesionRepository sesionRepository;
 
     @Override
     @Transactional
@@ -151,6 +156,17 @@ public class AuthServiceImpl implements IAuthService {
         // 6. Generar el refresh token
         String refreshToken = refreshTokenService.crearRefreshToken(usuario.getEmail());
 
+        Sesion sesion = Sesion.builder()
+                .refreshToken(refreshToken)
+                .id(usuario.getId())
+                .nombreUsuario(usuario.getNombreUsuario())
+                .rol(usuario.getRol().name())
+                .creadoEn(Instant.now())
+                .expiraEn(Instant.now().plus(7, ChronoUnit.DAYS))
+                .activo(true)
+                .build();
+        sesionRepository.save(sesion);
+
         // 7. Mapear y retornar la respuesta con TODOS los datos del perfil
         return LoginResponseDTO.builder()
                 .token(token)
@@ -177,6 +193,7 @@ public class AuthServiceImpl implements IAuthService {
      */
     @Override
     public LoginResponseDTO refreshToken(String refreshToken) {
+
         // 1. Validar el refresh token y obtener el email
         String email = refreshTokenService.obtenerEmailSiValido(refreshToken);
 
@@ -184,29 +201,39 @@ public class AuthServiceImpl implements IAuthService {
         UsuarioAuth usuario = usuarioAuthRepository.findByEmail(email)
                 .orElseThrow(() -> new InvalidCredentialsException("Usuario no encontrado"));
 
-        // 3. Obtener el perfil completo del usuario
+        // 3. Verificar que la sesión existe y está activa en MongoDB
+        Sesion sesion = sesionRepository
+                .findByRefreshTokenAndActivoTrue(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Sesión inválida o expirada"));
+
+        // 4. Obtener el perfil completo del usuario
         Usuario perfilUsuario = usuarioRepository.findById(usuario.getId())
                 .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-        // 4. Obtener el nivel del usuario
+        // 5. Obtener el nivel del usuario
         Integer nivel = null;
         if (usuario.getRol() == Rol.MIEMBRO && perfilUsuario instanceof Miembro) {
             nivel = ((Miembro) perfilUsuario).getNivel();
         } else {
-            nivel = 1; // Valor por defecto
+            nivel = 1;
         }
 
-        // 5. Generar el nuevo token JWT
+        // 6. Generar el nuevo access token
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("rol", usuario.getRol().name());
         extraClaims.put("email", usuario.getEmail());
 
         String newToken = jwtService.generarToken(extraClaims, usuario.getNombreUsuario());
 
-        // 6. Generar un nuevo refresh token (esto también invalida el anterior)
+        // 7. Generar nuevo refresh token (invalida el anterior)
         String newRefreshToken = refreshTokenService.crearRefreshToken(usuario.getEmail());
 
-        // 7. Retornar la respuesta con los nuevos tokens Y TODOS los datos del perfil
+        // 8. Actualizar la sesión en MongoDB con el nuevo refresh token
+        sesion.setRefreshToken(newRefreshToken);
+        sesion.setExpiraEn(Instant.now().plus(7, ChronoUnit.DAYS));
+        sesionRepository.save(sesion);
+
+        // 9. Retornar respuesta con los nuevos tokens y datos del perfil
         return LoginResponseDTO.builder()
                 .token(newToken)
                 .refreshToken(newRefreshToken)
@@ -236,6 +263,8 @@ public class AuthServiceImpl implements IAuthService {
 
         // Revocar el refresh token
         refreshTokenService.revocarToken(refreshToken);
+
+        sesionRepository.deleteByRefreshToken(refreshToken);
 
         log.info("Sesión cerrada exitosamente");
 
@@ -302,13 +331,13 @@ public class AuthServiceImpl implements IAuthService {
 
         // Buscar el usuario (si no existe, no revelar para mayor seguridad)
         Optional<UsuarioAuth> usuarioOpt = usuarioAuthRepository.findByEmail(email);
-        
+
         if (usuarioOpt.isEmpty()) {
             // No revelar si el email existe o no
             log.info("Solicitud de recuperación para email no registrado: {}", email);
             return "Se ha enviado un código de verificación a tu correo electrónico";
         }
-        
+
         UsuarioAuth usuario = usuarioOpt.get();
 
         // Eliminar códigos anteriores del mismo email

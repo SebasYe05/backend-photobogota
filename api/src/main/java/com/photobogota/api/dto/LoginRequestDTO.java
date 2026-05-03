@@ -24,4 +24,5 @@ public class LoginRequestDTO {
      */
     @NotBlank(message = "La contraseña es requerida")
     private String contrasena;
+
 }

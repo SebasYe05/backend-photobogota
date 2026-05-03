@@ -70,7 +70,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-     /**
+    /**
      * Endpoint para cerrar sesión.
      * Revoca el refresh token para invalidar la sesión del usuario.
      * 
@@ -91,6 +91,7 @@ public class AuthController {
 
     /**
      * Endpoint para obtener los datos del usuario autenticado.
+     * 
      * @param currentUser
      * @return UsuarioResumenDTO con los datos del usuario autenticado
      */
@@ -110,7 +111,7 @@ public class AuthController {
         }
     }
 
-     /**
+    /**
      * Endpoint para solicitar un código de recuperación de contraseña.
      * Genera un código de 6 dígitos y lo envía por correo electrónico.
      * 
@@ -124,7 +125,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("mensaje", mensaje));
     }
 
-     /**
+    /**
      * Endpoint para verificar el código y cambiar la contraseña.
      * 
      * @param dto DTO con el email, código y nueva contraseña
@@ -135,6 +136,19 @@ public class AuthController {
             @Valid @RequestBody VerificarCodigoDTO dto) {
         String mensaje = authService.verificarCodigoYCambiarContrasena(dto);
         return ResponseEntity.ok(Map.of("mensaje", mensaje));
+    }
+
+    @GetMapping("/verify-session")
+    public ResponseEntity<Map<String, Object>> verificarSesion(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).build();
+        }
+        // Devuelve el rol que tiene el JWT firmado (fuente de verdad del backend)
+        return ResponseEntity.ok(Map.of(
+                "nombreUsuario", userDetails.getUsername(),
+                "rol", userDetails.getAuthorities().iterator().next().getAuthority()
+                        .replace("ROLE_", "")));
     }
 
 }
