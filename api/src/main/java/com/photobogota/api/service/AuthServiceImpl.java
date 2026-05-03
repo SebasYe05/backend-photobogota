@@ -179,7 +179,7 @@ public class AuthServiceImpl implements IAuthService {
                 .nombresCompletos(perfilUsuario.getNombresCompletos())
                 .telefono(perfilUsuario.getTelefono())
                 .biografia(perfilUsuario.getBiografia())
-                .fotoPerfil(perfilUsuario.getFotoPefil())
+                .fotoPerfil(perfilUsuario.getFotoPerfil())
                 .build();
     }
 
@@ -245,7 +245,7 @@ public class AuthServiceImpl implements IAuthService {
                 .nombresCompletos(perfilUsuario.getNombresCompletos())
                 .telefono(perfilUsuario.getTelefono())
                 .biografia(perfilUsuario.getBiografia())
-                .fotoPerfil(perfilUsuario.getFotoPefil())
+                .fotoPerfil(perfilUsuario.getFotoPerfil())
                 .build();
     }
 
@@ -310,7 +310,7 @@ public class AuthServiceImpl implements IAuthService {
                 .email(usuarioAuth.getEmail())
                 .telefono(perfilUsuario.getTelefono())
                 .biografia(perfilUsuario.getBiografia())
-                .fotoPerfil(perfilUsuario.getFotoPefil())
+                .fotoPerfil(perfilUsuario.getFotoPerfil())
                 .rol(usuarioAuth.getRol().name())
                 .nivel(nivel)
                 .build();

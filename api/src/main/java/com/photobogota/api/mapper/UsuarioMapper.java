@@ -32,7 +32,7 @@ public interface UsuarioMapper {
     // Mapeo de Registro a Entidad
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "fechaRegistro", expression = "java(java.time.LocalDateTime.now())")
-    @Mapping(target = "fotoPefil", ignore = true)
+    @Mapping(target = "fotoPerfil", ignore = true)
     @Mapping(target = "biografia", ignore = true)
     @Mapping(target = "estadoCuenta", constant = "true")
     @Mapping(target = "correoConfirmado", constant = "false")

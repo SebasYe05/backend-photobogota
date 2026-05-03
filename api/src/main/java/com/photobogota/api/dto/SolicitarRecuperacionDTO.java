@@ -7,9 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO para solicitar el envío de código de recuperación de contraseña.
- */
 @Data
 @Builder
 @AllArgsConstructor

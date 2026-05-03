@@ -22,7 +22,7 @@ public abstract class Usuario { // Hacemos la clase abstracta para que no se pue
     private String nombresCompletos;
     private LocalDate fechaNacimiento;
     private String telefono;
-    private String fotoPefil;
+    private String fotoPerfil;
 
     @Builder.Default
     private Boolean estadoCuenta = true;

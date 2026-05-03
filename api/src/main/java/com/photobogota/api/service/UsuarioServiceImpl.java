@@ -46,7 +46,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
             usuario.setTelefono(dto.getTelefono());
         }
         if (dto.getFotoPerfil() != null) {
-            usuario.setFotoPefil(dto.getFotoPerfil());
+            usuario.setFotoPerfil(dto.getFotoPerfil());
         }
         if (dto.getBiografia() != null) {
             usuario.setBiografia(dto.getBiografia());
@@ -119,7 +119,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
                 .nombresCompletos(usuario.getNombresCompletos())
                 .email(usuarioAuth.getEmail())
                 .nombreUsuario(usuarioAuth.getNombreUsuario())
-                .fotoPefil(usuario.getFotoPefil())
+                .fotoPerfil(usuario.getFotoPerfil())
                 .biografia(usuario.getBiografia())
                 .tipoUsuario(usuarioAuth.getRol().name());
 

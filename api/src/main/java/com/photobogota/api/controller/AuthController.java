@@ -27,57 +27,62 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.photobogota.api.utils.ApiConstants;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.web.bind.annotation.GetMapping;
 
-/**
- * Controlador para manejar las operaciones de autenticación.
- */
 @RestController
 @RequestMapping(ApiConstants.V1 + "/auth")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Autenticación", description = "Endpoints para registro, login, logout y gestión de sesión")
 public class AuthController {
 
     private final IAuthService authService;
 
+    @Operation(summary = "Registrar nuevo usuario", description = "Crea una cuenta nueva con rol MIEMBRO por defecto")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Usuario registrado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o email/usuario ya registrado")
+    })
     @PostMapping("/register")
     public ResponseEntity<RegistroResponseDTO> registrar(@Valid @RequestBody RegistroRequestDTO dto) {
         RegistroResponseDTO nuevoUsuario = authService.registrar(dto);
         return new ResponseEntity<>(nuevoUsuario, HttpStatus.CREATED);
     }
 
-    /**
-     * Endpoint para iniciar sesión.
-     * Autentica al usuario y retorna los tokens JWT.
-     * 
-     * @param request DTO con las credenciales del usuario
-     * @return LoginResponseDTO con el token JWT y datos del usuario
-     */
+    @Operation(summary = "Iniciar sesión", description = "Autentica al usuario con email o nombre de usuario y retorna los tokens JWT")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Login exitoso, retorna access token y refresh token"),
+            @ApiResponse(responseCode = "401", description = "Credenciales incorrectas"),
+            @ApiResponse(responseCode = "403", description = "Cuenta desactivada")
+    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
         LoginResponseDTO response = authService.login(request);
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Endpoint para actualizar el token JWT usando un refresh token.
-     * 
-     * @param request DTO con el refresh token
-     * @return LoginResponseDTO con el nuevo token JWT y refresh token
-     */
+    @Operation(summary = "Actualizar token JWT", description = "Actualiza el token JWT usando un refresh token")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Token actualizado exitosamente"),
+            @ApiResponse(responseCode = "401", description = "Refresh token inválido o expirado")
+    })
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDTO> refreshToken(@RequestBody RefreshTokenRequestDTO request) {
         LoginResponseDTO response = authService.refreshToken(request.getRefreshToken());
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Endpoint para cerrar sesión.
-     * Revoca el refresh token para invalidar la sesión del usuario.
-     * 
-     * @param request DTO con el refresh token
-     * @return LogoutResponseDTO con el mensaje de confirmación
-     */
+    @Operation(summary = "Cerrar sesión", description = "Revoca el refresh token para invalidar la sesión del usuario")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Sesión cerrada exitosamente"),
+            @ApiResponse(responseCode = "401", description = "Refresh token inválido o expirado")
+    })
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponseDTO> logout(@RequestBody(required = false) RefreshTokenRequestDTO request) {
         if (request == null || request.getRefreshToken() == null || request.getRefreshToken().isEmpty()) {
@@ -90,12 +95,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Endpoint para obtener los datos del usuario autenticado.
-     * 
-     * @param currentUser
-     * @return UsuarioResumenDTO con los datos del usuario autenticado
-     */
+    @Operation(summary = "Obtener usuario autenticado", description = "Retorna los datos del usuario dueño del token JWT activo", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Datos del usuario autenticado"),
+            @ApiResponse(responseCode = "401", description = "Token ausente o inválido"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
     @GetMapping("/me")
     public ResponseEntity<UsuarioResumenDTO> obtenerUsuarioAutenticado(
             @AuthenticationPrincipal UserDetails currentUser) {
@@ -112,13 +117,11 @@ public class AuthController {
         }
     }
 
-    /**
-     * Endpoint para solicitar un código de recuperación de contraseña.
-     * Genera un código de 6 dígitos y lo envía por correo electrónico.
-     * 
-     * @param dto DTO con el email del usuario
-     * @return Mensaje de confirmación
-     */
+    @Operation(summary = "Solicitar recuperación de contraseña", description = "Envía un código de 6 dígitos al email registrado")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Código enviado al email"),
+            @ApiResponse(responseCode = "404", description = "Email no registrado")
+    })
     @PostMapping("/passwords/recovery-request")
     public ResponseEntity<Map<String, String>> solicitarRecuperacion(
             @Valid @RequestBody SolicitarRecuperacionDTO dto) {
@@ -126,12 +129,11 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("mensaje", mensaje));
     }
 
-    /**
-     * Endpoint para verificar el código y cambiar la contraseña.
-     * 
-     * @param dto DTO con el email, código y nueva contraseña
-     * @return Mensaje de confirmación
-     */
+    @Operation(summary = "Verificar código y cambiar contraseña", description = "Valida el código recibido por email y actualiza la contraseña")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Contraseña actualizada correctamente"),
+            @ApiResponse(responseCode = "400", description = "Código inválido o expirado")
+    })
     @PostMapping("/passwords/reset")
     public ResponseEntity<Map<String, String>> verificarCodigo(
             @Valid @RequestBody VerificarCodigoDTO dto) {
@@ -139,6 +141,11 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("mensaje", mensaje));
     }
 
+    @Operation(summary = "Verificar sesión", description = "Verifica si el token JWT es válido y retorna información del usuario")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Sesión válida"),
+            @ApiResponse(responseCode = "401", description = "Token inválido o expirado")
+    })
     @GetMapping("/verify-session")
     public ResponseEntity<Map<String, Object>> verificarSesion(
             @AuthenticationPrincipal UserDetails userDetails) {
