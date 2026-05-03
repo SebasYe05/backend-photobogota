@@ -26,9 +26,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
+        private final RateLimitFilter rateLimitFilter;
 
-        public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                        RateLimitFilter rateLimitFilter) {
                 this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+                this.rateLimitFilter = rateLimitFilter;
         }
 
         @Bean
@@ -62,14 +65,16 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/aspirantes",
                                                                 "/api/v1/aspirantes/**")
                                                 .permitAll()
-                                                //Aspirantes: crear solicitud sin cuenta 
+                                                // Aspirantes: crear solicitud sin cuenta
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/aspirantes").permitAll()
 
                                                 // Spots públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/spots/**").permitAll()
 
                                                 // Categorías y localidades públicas
-                                                .requestMatchers(HttpMethod.GET, "/api/v1/categorias", "/api/v1/localidades").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/categorias",
+                                                                "/api/v1/localidades")
+                                                .permitAll()
 
                                                 // Perfiles públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/perfil/**")
@@ -94,7 +99,7 @@ public class SecurityConfig {
                                                                 "/api/v1/usuarios/me/password",
                                                                 "/api/v1/auth/me")
                                                 .authenticated()
-                                                
+
                                                 // RUTAS DE MODERADOR
                                                 .requestMatchers("/api/v1/moderador/**").hasRole("MOD")
                                                 // RUTAS DE ADMINISTRADOR
@@ -105,7 +110,8 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/v1/**").authenticated()
                                                 .anyRequest().authenticated())
 
-                                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                                .addFilterBefore(jwtAuthenticationFilter, RateLimitFilter.class);
 
                 return http.build();
         }
