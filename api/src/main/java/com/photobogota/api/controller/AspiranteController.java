@@ -9,11 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.photobogota.api.utils.ApiConstants;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/aspirantes")
+@RequestMapping(ApiConstants.V1 + "/aspirantes")
 @RequiredArgsConstructor
 public class AspiranteController {
 

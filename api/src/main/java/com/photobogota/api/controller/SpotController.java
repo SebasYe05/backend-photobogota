@@ -10,11 +10,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import com.photobogota.api.utils.ApiConstants;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/spots")
+@RequestMapping(ApiConstants.V1 + "/spots")
 @RequiredArgsConstructor
 public class SpotController {
 

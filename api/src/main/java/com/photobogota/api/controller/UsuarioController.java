@@ -3,7 +3,6 @@ package com.photobogota.api.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,14 +16,14 @@ import com.photobogota.api.dto.CambiarContrasenaResponseDTO;
 import com.photobogota.api.dto.EditarPerfilDTO;
 import com.photobogota.api.dto.PerfilUsuarioDTO;
 import com.photobogota.api.service.IUsuarioService;
+import com.photobogota.api.utils.ApiConstants;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/usuarios")
+@RequestMapping(ApiConstants.V1 + "/usuarios")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class UsuarioController {
 
     private final IUsuarioService usuarioService;

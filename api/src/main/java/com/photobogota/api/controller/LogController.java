@@ -17,10 +17,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.photobogota.api.utils.ApiConstants;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/admin/logs")
+@RequestMapping(ApiConstants.V1 + "/admin/logs")
 @PreAuthorize("hasRole('ADMIN')")
 public class LogController {
 

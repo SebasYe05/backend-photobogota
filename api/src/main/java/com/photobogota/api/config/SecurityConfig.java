@@ -51,6 +51,13 @@ public class SecurityConfig {
                                                 // PREFILGHT CORS
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                                                // RUTAS DE DOCUMENTACIÓN (Swagger)
+                                                .requestMatchers(
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html",
+                                                                "/v3/api-docs/**",
+                                                                "/v3/api-docs")
+                                                .permitAll()
                                                 // RUTAS PÚBLICAS
                                                 // Autenticación
                                                 .requestMatchers(

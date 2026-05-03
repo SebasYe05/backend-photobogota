@@ -15,12 +15,13 @@ import com.photobogota.api.dto.CrearUsuarioRequestDTO;
 import com.photobogota.api.dto.RegistroResponseDTO;
 import com.photobogota.api.dto.UsuarioListResponseDTO;
 import com.photobogota.api.service.IAdminService;
+import com.photobogota.api.utils.ApiConstants;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/admin")
+@RequestMapping(ApiConstants.V1 + "/api/v1/admin")
 @RequiredArgsConstructor
 public class AdminController {
 

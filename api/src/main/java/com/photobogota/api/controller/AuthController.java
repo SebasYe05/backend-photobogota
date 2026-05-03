@@ -25,6 +25,7 @@ import com.photobogota.api.service.IAuthService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.photobogota.api.utils.ApiConstants;
 
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * Controlador para manejar las operaciones de autenticación.
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping(ApiConstants.V1 + "/auth")
 @RequiredArgsConstructor
 @Validated
 public class AuthController {
