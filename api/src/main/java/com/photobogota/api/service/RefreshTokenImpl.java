@@ -5,6 +5,7 @@ import java.util.Date;
 import org.springframework.stereotype.Service;
 
 import com.photobogota.api.config.JwtService;
+import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.exception.UnauthorizedException;
 import com.photobogota.api.model.RefreshToken;
 import com.photobogota.api.repository.RefreshTokenRepository;
@@ -38,9 +39,9 @@ public class RefreshTokenImpl implements IRefreshToken {
 
     @Override
     public String obtenerEmailSiValido(String token) {
-        // 1. Si el token no existe en Mongo, mandamos 401
+        // 1. Si el token no existe en Mongo, mandamos 404
         RefreshToken rt = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new UnauthorizedException("Sesión no encontrada en el servidor"));
+                .orElseThrow(() -> new ResourceNotFoundException("Sesión no encontrada en el servidor"));
 
         // 2. Si está revocado, limpiamos y mandamos 401
         if (rt.isRevocado()) {

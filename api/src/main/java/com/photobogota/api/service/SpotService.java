@@ -1,7 +1,7 @@
 package com.photobogota.api.service;
 
 import com.photobogota.api.dto.*;
-import com.photobogota.api.exception.UnauthorizedException;
+import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.mapper.SpotMapper;
 import com.photobogota.api.model.Spot;
 import com.photobogota.api.repository.SpotRepository;
@@ -36,7 +36,7 @@ public class SpotService {
 
     public SpotResponseDTO obtenerPorId(String id) {
         Spot spot = spotRepository.findById(id)
-                .orElseThrow(() -> new UnauthorizedException("Spot no encontrado con id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Spot no encontrado con id: " + id));
 
         return spotMapper.toResponse(spot);
     }
@@ -63,7 +63,7 @@ public class SpotService {
 
     public SpotResponseDTO agregarResena(String spotId, ResenaRequestDTO request, String usuario) {
         Spot spot = spotRepository.findById(spotId)
-                .orElseThrow(() -> new UnauthorizedException("Spot no encontrado con id: " + spotId));
+                .orElseThrow(() -> new ResourceNotFoundException("Spot no encontrado con id: " + spotId));
 
         Spot.Resena resena = new Spot.Resena();
         resena.setId(UUID.randomUUID().toString());

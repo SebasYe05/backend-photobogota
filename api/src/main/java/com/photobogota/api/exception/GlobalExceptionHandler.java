@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
     }
 
     // 2. Conflictos de unicidad (email, username, duplicados en DB)
-    @ExceptionHandler({ResourceAlreadyExistsException.class, DuplicateKeyException.class})
+    @ExceptionHandler({ ResourceAlreadyExistsException.class, DuplicateKeyException.class })
     public ResponseEntity<Map<String, Object>> handleConflicts(
             Exception ex, HttpServletRequest request) {
 
@@ -123,5 +123,11 @@ public class GlobalExceptionHandler {
             body.put("message", message);
         }
         return body;
+    }
+
+    // 6. Recurso no encontrado (404)
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleNotFound(ResourceNotFoundException ex, HttpServletRequest req) {
+        return new ResponseEntity<>(buildBody(HttpStatus.NOT_FOUND, ex.getMessage(), req), HttpStatus.NOT_FOUND);
     }
 }
