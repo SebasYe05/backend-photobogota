@@ -50,6 +50,7 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(auth -> auth
                                                 // PREFILGHT CORS
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 
                                                 // RUTAS DE DOCUMENTACIÓN (Swagger)
                                                 .requestMatchers(

@@ -40,3 +40,6 @@ logs/
 .DS_Store
 thumbs.db
 .directory
+
+# Imágenes subidas localmente
+uploads/
