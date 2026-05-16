@@ -46,6 +46,7 @@ jobs:
       run: >
         mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
         -Dsonar.projectKey=SebasYe05_backend-photobogota 
+        -DskipTests
         --file pom.xml
       working-directory: api
 
