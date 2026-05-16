@@ -41,11 +41,12 @@ jobs:
         key: ${{ runner.os }}-sonar
         restore-keys: ${{ runner.os }}-sonar
 
-    # Ejecutar las pruebas, compilar y analiza con Sonar en un solo comando de Maven
+    # Ejecutar la compilación y el análisis con Sonar saltándose los tests
     - name: Build and analyze with Sonar
       run: >
-        mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
+        mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.6.0.6792:sonar 
         -Dsonar.projectKey=SebasYe05_backend-photobogota 
+        -Dsonar.organization=sebasye05
         -DskipTests
         --file pom.xml
       working-directory: api
