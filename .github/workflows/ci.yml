@@ -1,4 +1,4 @@
-name: Java CI with Maven (Java 25)
+name: Java CI with Maven (Java 25) & SonarQube
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    name: Build, Analyze and Pack
     runs-on: ubuntu-latest
 
     env:
@@ -18,10 +19,14 @@ jobs:
       MAIL_PORT: ${{ secrets.MAIL_PORT }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     steps:
-    - uses: actions/checkout@v4
-    
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Deshabilita clones superficiales para mejorar la relevancia del análisis de Sonar
+
     - name: Set up JDK 25
       uses: actions/setup-java@v4
       with:
@@ -29,9 +34,21 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Build with Maven
-      run: mvn -B package -DskipTests --file pom.xml
+    - name: Cache SonarQube packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+
+    # Ejecutar las pruebas, compilar y analiza con Sonar en un solo comando de Maven
+    - name: Build and analyze with Sonar
+      run: >
+        mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar 
+        -Dsonar.projectKey=SebasYe05_backend-photobogota 
+        --file pom.xml
       working-directory: api
 
+    # Por si necesitamos la imagen local después del análisis
     - name: Build Docker Image
       run: docker build -t backend-photobogota:latest ./api
