@@ -75,7 +75,7 @@ public class SpotService {
 
         // Recalcular rating promedio
         double nuevoRating = spot.getResenas().stream()
-                .mapToInt(Spot.Resena::getRating)
+                .mapToInt(r -> r.getRating()) 
                 .average()
                 .orElse(0.0);
 

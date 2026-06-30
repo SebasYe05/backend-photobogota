@@ -4,14 +4,14 @@ import java.util.Optional;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
+//import org.springframework.stereotype.Repository;
 
 import com.photobogota.api.model.CodigoRecuperacion;
 
 /**
  * Repository para manejar los códigos de recuperación de contraseña.
  */
-@Repository
+//@Repository
 public interface CodigoRecuperacionRepository extends MongoRepository<CodigoRecuperacion, ObjectId> {
     
     /**
