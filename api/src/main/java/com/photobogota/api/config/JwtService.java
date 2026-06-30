@@ -50,17 +50,17 @@ public class JwtService {
      * El subject es el identificador principal del usuario en el token
      * 
      * @param token el token JWT
-     * @return el nombre de usuario contenido en el token
+     * @return el nombre de usuario contenido en el token, o null si no existe
      */
     public String extraerNombreUsuario(String token) {
-        return extraerClaim(token, Claims::getSubject);
+        return extraerClaim(token, claims -> claims.getSubject());
     }
 
     /**
      * Extrae un claim específico del token JWT
      * Los claims son la información contenida en el token
      * 
-     * @param token el token JWT
+     * @param token          el token JWT
      * @param claimsResolver función para extraer el claim deseado
      * @return el valor del claim extraído
      */
@@ -73,7 +73,7 @@ public class JwtService {
      * Genera un token JWT con claims adicionales
      * Este método se usa para crear tokens de acceso con información extra
      * 
-     * @param extraClaims claims adicionales a incluir en el token
+     * @param extraClaims   claims adicionales a incluir en el token
      * @param nombreUsuario el nombre de usuario para el subject del token
      * @return el token JWT generado
      */
@@ -109,8 +109,8 @@ public class JwtService {
      * Este método privado es usado internamente por los métodos de generación
      * 
      * @param extraClaims claims adicionales
-     * @param subject el subject (generalmente el nombre de usuario)
-     * @param expiracion tiempo de expiración en milisegundos
+     * @param subject     el subject (generalmente el nombre de usuario)
+     * @param expiracion  tiempo de expiración en milisegundos
      * @return el token JWT construido
      */
     private String construirToken(Map<String, Object> extraClaims, String subject, long expiracion) {
@@ -128,7 +128,7 @@ public class JwtService {
      * Compara el nombre de usuario en el token con el esperado
      * y verifica que el token no haya expirado
      * 
-     * @param token el token JWT a validar
+     * @param token         el token JWT a validar
      * @param nombreUsuario el nombre de usuario esperado
      * @return true si el token es válido, false en caso contrario
      */
@@ -148,20 +148,13 @@ public class JwtService {
         return extraerExpiracion(token).before(new Date());
     }
 
-    /**
-     * Extrae la fecha de expiración del token
-     * 
-     * @param token el token JWT
-     * @return la fecha de expiración del token
-     */
     private Date extraerExpiracion(String token) {
-        return extraerClaim(token, Claims::getExpiration);
+        return extraerClaim(token, claims -> claims.getExpiration());
     }
 
     /**
      * Extrae todos los claims del token
      * Este método es usado internamente para obtener toda la información del token
-     * 
      * @param token el token JWT
      * @return todos los claims del token
      */

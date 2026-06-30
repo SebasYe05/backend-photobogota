@@ -35,7 +35,7 @@ public class ImagenController {
 
     @Operation(summary = "Subir imagen de spot", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping(value = "/spot", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('MIEMBRO', 'SOCIO', 'MODERADOR')")
+    @PreAuthorize("hasAnyRole('MIEMBRO', 'SOCIO', 'MOD')")
     public ResponseEntity<Map<String, String>> subirImagenSpot(
             @RequestParam("file") MultipartFile file) throws IOException {
         validarImagen(file);

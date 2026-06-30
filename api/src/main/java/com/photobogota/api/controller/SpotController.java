@@ -49,14 +49,14 @@ public class SpotController {
         return ResponseEntity.ok(spotService.obtenerPorId(id));
     }
 
-    @Operation(summary = "Publicar nuevo spot", description = "Crea un spot fotográfico. Requiere rol MIEMBRO, SOCIO o MODERADOR.", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Publicar nuevo spot", description = "Crea un spot fotográfico. Requiere rol MIEMBRO, SOCIO o MOD.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Spot publicado exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos"),
             @ApiResponse(responseCode = "403", description = "Rol insuficiente")
     })
     @PostMapping
-    @PreAuthorize("hasAnyRole('MIEMBRO', 'SOCIO', 'MODERADOR')")
+    @PreAuthorize("hasAnyRole('MIEMBRO', 'SOCIO', 'MOD')")
     public ResponseEntity<SpotResponseDTO> crearSpot(
             @Valid @RequestBody CrearSpotRequestDTO request,
             @AuthenticationPrincipal UserDetails userDetails) {
