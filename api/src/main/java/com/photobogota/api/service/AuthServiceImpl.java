@@ -167,20 +167,21 @@ public class AuthServiceImpl implements IAuthService {
                 .build();
         sesionRepository.save(sesion);
 
-        // 7. Mapear y retornar la respuesta con TODOS los datos del perfil
-        return LoginResponseDTO.builder()
-                .token(token)
-                .refreshToken(refreshToken)
-                .email(usuario.getEmail())
-                .nombreUsuario(usuario.getNombreUsuario())
-                .rol(usuario.getRol().name())
-                .nivel(nivel)
-                .mensaje("Autenticación exitosa")
-                .nombresCompletos(perfilUsuario.getNombresCompletos())
-                .telefono(perfilUsuario.getTelefono())
-                .biografia(perfilUsuario.getBiografia())
-                .fotoPerfil(perfilUsuario.getFotoPerfil())
-                .build();
+// 7. Mapear y retornar la respuesta con TODOS los datos del perfil
+         return LoginResponseDTO.builder()
+                 .token(token)
+                 .refreshToken(refreshToken)
+                 .email(usuario.getEmail())
+                 .nombreUsuario(usuario.getNombreUsuario())
+                 .rol(usuario.getRol().name())
+                 .nivel(nivel)
+                 .mensaje("Autenticación exitosa")
+                 .nombresCompletos(perfilUsuario.getNombresCompletos())
+                 .telefono(perfilUsuario.getTelefono())
+                 .biografia(perfilUsuario.getBiografia())
+                 .fotoPerfil(perfilUsuario.getFotoPerfil())
+                 .estadoCuenta(perfilUsuario.getEstadoCuenta())
+                 .build();
     }
 
     /**
@@ -233,20 +234,21 @@ public class AuthServiceImpl implements IAuthService {
         sesion.setExpiraEn(Instant.now().plus(7, ChronoUnit.DAYS));
         sesionRepository.save(sesion);
 
-        // 9. Retornar respuesta con los nuevos tokens y datos del perfil
-        return LoginResponseDTO.builder()
-                .token(newToken)
-                .refreshToken(newRefreshToken)
-                .email(usuario.getEmail())
-                .nombreUsuario(usuario.getNombreUsuario())
-                .rol(usuario.getRol().name())
-                .nivel(nivel)
-                .mensaje("Token refrescado exitosamente")
-                .nombresCompletos(perfilUsuario.getNombresCompletos())
-                .telefono(perfilUsuario.getTelefono())
-                .biografia(perfilUsuario.getBiografia())
-                .fotoPerfil(perfilUsuario.getFotoPerfil())
-                .build();
+// 9. Retornar respuesta con los nuevos tokens y datos del perfil
+         return LoginResponseDTO.builder()
+                 .token(newToken)
+                 .refreshToken(newRefreshToken)
+                 .email(usuario.getEmail())
+                 .nombreUsuario(usuario.getNombreUsuario())
+                 .rol(usuario.getRol().name())
+                 .nivel(nivel)
+                 .mensaje("Token refrescado exitosamente")
+                 .nombresCompletos(perfilUsuario.getNombresCompletos())
+                 .telefono(perfilUsuario.getTelefono())
+                 .biografia(perfilUsuario.getBiografia())
+                 .fotoPerfil(perfilUsuario.getFotoPerfil())
+                 .estadoCuenta(perfilUsuario.getEstadoCuenta())
+                 .build();
     }
 
     /**

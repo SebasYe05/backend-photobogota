@@ -45,4 +45,7 @@ public class LoginResponseDTO {
 
     @Schema(description = "Mensaje de respuesta", example = "Inicio de sesión exitoso")
     private String mensaje;
+
+    @Schema(description = "Estado de la cuenta del usuario", example = "true")
+    private Boolean estadoCuenta;
 }
