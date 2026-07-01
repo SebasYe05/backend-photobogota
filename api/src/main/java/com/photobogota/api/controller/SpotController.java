@@ -60,9 +60,16 @@ public class SpotController {
     public ResponseEntity<SpotResponseDTO> crearSpot(
             @Valid @RequestBody CrearSpotRequestDTO request,
             @AuthenticationPrincipal UserDetails userDetails) {
+        String rol = userDetails.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .filter(a -> a.startsWith("ROLE_"))
+                .findFirst()
+                .map(a -> a.substring(5))
+                .orElse(null);
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(spotService.crearSpot(request, userDetails.getUsername()));
+                .body(spotService.crearSpot(request, userDetails.getUsername(), rol));
     }
 
     @Operation(summary = "Agregar reseña a un spot", description = "Publica una calificación y comentario sobre un spot. Requiere estar autenticado.", security = @SecurityRequirement(name = "bearerAuth"))

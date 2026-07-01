@@ -5,18 +5,23 @@ import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.mapper.SpotMapper;
 import com.photobogota.api.model.Spot;
 import com.photobogota.api.repository.SpotRepository;
+import com.photobogota.api.repository.UsuarioAuthRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SpotService {
 
     private final SpotRepository spotRepository;
     private final SpotMapper spotMapper;
+    private final UsuarioAuthRepository usuarioAuthRepository;
 
     public List<SpotResumenDTO> obtenerTodos(String categoria, String localidad) {
         List<Spot> spots;
@@ -34,14 +39,34 @@ public class SpotService {
         return spotMapper.toResumenList(spots);
     }
 
+    @Transactional
     public SpotResponseDTO obtenerPorId(String id) {
         Spot spot = spotRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Spot no encontrado con id: " + id));
 
-        return spotMapper.toResponse(spot);
+        SpotResponseDTO response = spotMapper.toResponse(spot);
+
+        // Si no tiene rol pero tiene username, intentamos obtenerlo
+        if (spot.getCreadorRol() == null && spot.getCreadorUsername() != null) {
+            usuarioAuthRepository.findByEmailOrNombreUsuario(spot.getCreadorUsername(), spot.getCreadorUsername())
+                    .ifPresentOrElse(
+                            usuario -> {
+                                response.setRol(usuario.getRol().name());
+                                spot.setCreadorRol(usuario.getRol().name());
+                                spotRepository.save(spot);
+                            },
+                            () -> log.warn("UsuarioAuth no encontrado para creadorUsername: '{}'",
+                                    spot.getCreadorUsername()));
+        } else if (spot.getCreadorRol() != null) {
+            // Si ya tiene rol, lo seteamos en la respuesta
+            response.setRol(spot.getCreadorRol());
+        }
+
+        return response;
     }
 
-    public SpotResponseDTO crearSpot(CrearSpotRequestDTO request, String creadorUsername) {
+    @Transactional
+    public SpotResponseDTO crearSpot(CrearSpotRequestDTO request, String creadorUsername, String rol) {
         Spot spot = new Spot();
         spot.setNombre(request.getNombre());
         spot.setLatitud(request.getLatitud());
@@ -53,14 +78,25 @@ public class SpotService {
         spot.setRecomendacion(request.getRecomendacion());
         spot.setTipsFoto(request.getTipsFoto());
         spot.setCreadorUsername(creadorUsername);
+        spot.setCreadorRol(rol);
 
         if (request.getImagenes() != null && !request.getImagenes().isEmpty()) {
             spot.setImagenes(request.getImagenes());
         }
 
-        return spotMapper.toResponse(spotRepository.save(spot));
+        Spot savedSpot = spotRepository.save(spot);
+        SpotResponseDTO response = spotMapper.toResponse(savedSpot);
+
+        // Obtener el rol del usuario para la respuesta
+        usuarioAuthRepository.findByEmailOrNombreUsuario(creadorUsername, creadorUsername)
+                .ifPresentOrElse(
+                        usuario -> response.setRol(usuario.getRol().name()),
+                        () -> log.warn("UsuarioAuth no encontrado para creadorUsername: '{}'", creadorUsername));
+
+        return response;
     }
 
+    @Transactional
     public SpotResponseDTO agregarResena(String spotId, ResenaRequestDTO request, String usuario) {
         Spot spot = spotRepository.findById(spotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Spot no encontrado con id: " + spotId));
@@ -82,6 +118,14 @@ public class SpotService {
         spot.setRating(Math.round(nuevoRating * 10.0) / 10.0);
         spot.setTotalResenas(spot.getResenas().size());
 
-        return spotMapper.toResponse(spotRepository.save(spot));
+        Spot updatedSpot = spotRepository.save(spot);
+        SpotResponseDTO response = spotMapper.toResponse(updatedSpot);
+
+        // Asegurar que el rol esté presente en la respuesta
+        if (updatedSpot.getCreadorRol() != null) {
+            response.setRol(updatedSpot.getCreadorRol());
+        }
+
+        return response;
     }
 }

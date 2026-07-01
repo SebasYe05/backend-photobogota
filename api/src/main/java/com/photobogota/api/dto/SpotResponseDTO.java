@@ -54,6 +54,9 @@ public class SpotResponseDTO {
     @Schema(description = "ID del usuario que creó el spot")
     private String usuarioId;
 
+    @Schema(description = "Rol del usuario que creó el spot", example = "MIEMBRO")
+    private String rol;
+
      @Schema(description = "Fecha de creación del spot", example = "2023-01-01T00:00:00Z")
     private String createdAt;
 

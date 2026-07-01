@@ -30,6 +30,7 @@ public class Spot {
     private Integer totalResenas = 0;
 
     private String creadorUsername; // nombreUsuario del creador (SOCIO/MODERADOR)
+    private String creadorRol;
 
     private List<Resena> resenas = new ArrayList<>();
 

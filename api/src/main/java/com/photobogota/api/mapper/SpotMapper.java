@@ -16,6 +16,7 @@ public interface SpotMapper {
     // Spot → SpotResumenDTO (para los marcadores del mapa)
     @Mapping(target = "imagen", expression = "java(spot.getImagenes().isEmpty() ? null : spot.getImagenes().get(0))")
     @Mapping(target = "usuarioId", source = "creadorUsername")
+    @Mapping(target = "rol", source = "creadorRol")
     @Mapping(target = "createdAt", source = "creadoEn")
     SpotResumenDTO toResumen(Spot spot);
 
@@ -26,6 +27,7 @@ public interface SpotMapper {
     @Mapping(target = "imagen", expression = "java(spot.getImagenes().isEmpty() ? null : spot.getImagenes().get(0))")
     @Mapping(target = "resenas", source = "resenas")
     @Mapping(target = "usuarioId", source = "creadorUsername")
+    @Mapping(target = "rol", source = "creadorRol")
     @Mapping(target = "createdAt", source = "creadoEn")
     SpotResponseDTO toResponse(Spot spot);
 
