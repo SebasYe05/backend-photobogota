@@ -101,6 +101,14 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/spots/*/resenas")
                                                 .authenticated()
 
+                                                // Crear calificaciones
+                                                .requestMatchers(HttpMethod.POST, "/api/v1/spots/*/calificaciones")
+                                                .authenticated()
+
+                                                // Calificaciones publicas (detalle)
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/calificaciones/**")
+                                                .permitAll()
+
                                                 // Gestión del propio usuario
                                                 .requestMatchers(
                                                                 "/api/v1/usuarios/perfil",
