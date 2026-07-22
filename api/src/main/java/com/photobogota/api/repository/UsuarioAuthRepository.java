@@ -1,11 +1,13 @@
 package com.photobogota.api.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.repository.MongoRepository;
 //import org.springframework.stereotype.Repository;
 
+import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.UsuarioAuth;
 
 //@Repository
@@ -20,4 +22,6 @@ public interface UsuarioAuthRepository extends MongoRepository<UsuarioAuth, Obje
     boolean existsByNombreUsuario(String nombreUsuario);
 
     Optional<UsuarioAuth> findByEmailOrNombreUsuario(String email, String nombreUsuario);
+
+    List<UsuarioAuth> findByRol(Rol rol);
 }

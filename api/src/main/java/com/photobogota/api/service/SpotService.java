@@ -22,6 +22,7 @@ public class SpotService {
     private final SpotRepository spotRepository;
     private final SpotMapper spotMapper;
     private final UsuarioAuthRepository usuarioAuthRepository;
+    private final INotificacionService notificacionService;
 
     public List<SpotResumenDTO> obtenerTodos(String categoria, String localidad) {
         List<Spot> spots;
@@ -93,6 +94,12 @@ public class SpotService {
                         usuario -> response.setRol(usuario.getRol().name()),
                         () -> log.warn("UsuarioAuth no encontrado para creadorUsername: '{}'", creadorUsername));
 
+        try {
+            notificacionService.notificarNuevoSpot(savedSpot);
+        } catch (Exception e) {
+            log.error("No se pudo notificar el nuevo spot {}: {}", savedSpot.getId(), e.getMessage());
+        }
+
         return response;
     }
 
@@ -124,6 +131,12 @@ public class SpotService {
         // Asegurar que el rol esté presente en la respuesta
         if (updatedSpot.getCreadorRol() != null) {
             response.setRol(updatedSpot.getCreadorRol());
+        }
+
+        try {
+            notificacionService.notificarNuevaResena(updatedSpot, resena, usuario);
+        } catch (Exception e) {
+            log.error("No se pudo notificar la nueva reseña en el spot {}: {}", spotId, e.getMessage());
         }
 
         return response;
