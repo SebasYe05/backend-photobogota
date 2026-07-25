@@ -41,13 +41,19 @@ public class CalificacionResponseDTO {
     }
 
     private static String formatearFecha(LocalDateTime fecha) {
-        if (fecha == null) return "Recientemente";
-        long dias = ChronoUnit.DAYS.between(fecha, LocalDateTime.now());
-        if (dias == 0)   return "Hoy";
-        if (dias == 1)   return "Ayer";
-        if (dias < 7)    return "Hace " + dias + " dias";
-        if (dias < 30)   return "Hace " + (dias / 7) + " semanas";
-        if (dias < 365)  return "Hace " + (dias / 30) + " meses";
+        if (fecha == null)
+            return "Recientemente";
+        long dias = ChronoUnit.DAYS.between(fecha.toLocalDate(), LocalDateTime.now().toLocalDate());
+        if (dias == 0)
+            return "Hoy";
+        if (dias == 1)
+            return "Ayer";
+        if (dias < 7)
+            return "Hace " + dias + " dias";
+        if (dias < 30)
+            return "Hace " + (dias / 7) + " semanas";
+        if (dias < 365)
+            return "Hace " + (dias / 30) + " meses";
         return "Hace " + (dias / 365) + " anos";
     }
 }

@@ -41,7 +41,7 @@ public interface SpotMapper {
     // Lógica de formato de fecha — igual a como lo manejas con toEntity en UsuarioMapper
     default String formatearFecha(LocalDateTime fecha) {
         if (fecha == null) return "Recientemente";
-        long dias = ChronoUnit.DAYS.between(fecha, LocalDateTime.now());
+        long dias = ChronoUnit.DAYS.between(fecha.toLocalDate(), LocalDateTime.now().toLocalDate());
         if (dias == 0)   return "Hoy";
         if (dias == 1)   return "Ayer";
         if (dias < 7)    return "Hace " + dias + " días";

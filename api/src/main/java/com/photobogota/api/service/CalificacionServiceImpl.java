@@ -2,6 +2,7 @@ package com.photobogota.api.service;
 
 import com.photobogota.api.dto.CalificacionRequestDTO;
 import com.photobogota.api.dto.CalificacionResponseDTO;
+import com.photobogota.api.exception.ResourceAlreadyExistsException;
 import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.model.Calificacion;
 import com.photobogota.api.model.Spot;
@@ -18,15 +19,20 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CalificacionService {
+public class CalificacionServiceImpl implements ICalificacionService {
 
     private final CalificacionRepository calificacionRepository;
     private final SpotRepository spotRepository;
 
+    @Override
     @Transactional
     public CalificacionResponseDTO crearCalificacion(String spotId, CalificacionRequestDTO request, String usuario) {
         Spot spot = spotRepository.findById(spotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Spot no encontrado con id: " + spotId));
+
+        if (calificacionRepository.findBySpotIdAndUsuario(spotId, usuario) != null) {
+            throw new ResourceAlreadyExistsException("calificacion para este spot", usuario);
+        }
 
         Calificacion calificacion = new Calificacion();
         calificacion.setSpotId(spotId);
@@ -42,6 +48,32 @@ public class CalificacionService {
         return CalificacionResponseDTO.from(calificacion);
     }
 
+    @Override
+    @Transactional
+    public CalificacionResponseDTO modificarCalificacion(String spotId, String calificacionId, CalificacionRequestDTO request, String usuario) {
+        Calificacion calificacion = calificacionRepository.findById(calificacionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Calificacion no encontrada con id: " + calificacionId));
+
+        if (!calificacion.getSpotId().equals(spotId)) {
+            throw new ResourceNotFoundException("La calificacion no pertenece al spot indicado");
+        }
+
+        if (!calificacion.getUsuario().equals(usuario)) {
+            throw new ResourceNotFoundException("No tienes permiso para modificar esta calificacion");
+        }
+
+        calificacion.setEstrellas(request.getEstrellas());
+        calificacion.setComentario(request.getComentario());
+
+        calificacionRepository.save(calificacion);
+        log.info("Calificacion {} modificada para spot {} por usuario {}", calificacionId, spotId, usuario);
+
+        recalcularRatingSpot(spotId);
+
+        return CalificacionResponseDTO.from(calificacion);
+    }
+
+    @Override
     public List<CalificacionResponseDTO> listarPorSpot(String spotId) {
         return calificacionRepository.findBySpotId(spotId)
                 .stream()
@@ -49,6 +81,7 @@ public class CalificacionService {
                 .collect(Collectors.toList());
     }
 
+    @Override
     public CalificacionResponseDTO obtenerPorId(String id) {
         Calificacion calificacion = calificacionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Calificacion no encontrada con id: " + id));

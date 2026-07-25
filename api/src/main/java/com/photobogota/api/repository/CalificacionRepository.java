@@ -8,4 +8,6 @@ import java.util.List;
 public interface CalificacionRepository extends MongoRepository<Calificacion, String> {
 
     List<Calificacion> findBySpotId(String spotId);
+
+    Calificacion findBySpotIdAndUsuario(String spotId, String usuario);
 }

@@ -2,7 +2,7 @@ package com.photobogota.api.controller;
 
 import com.photobogota.api.dto.CalificacionRequestDTO;
 import com.photobogota.api.dto.CalificacionResponseDTO;
-import com.photobogota.api.service.CalificacionService;
+import com.photobogota.api.service.ICalificacionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,7 +29,7 @@ import java.util.List;
 @Tag(name = "Calificaciones de spots", description = "Calificacion de spots con estrellas")
 public class CalificacionController {
 
-    private final CalificacionService calificacionService;
+    private final ICalificacionService calificacionService;
 
     @Operation(summary = "Crear una calificacion para un spot", description = "Registra una calificacion con estrellas. Requiere autenticacion.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
@@ -70,5 +70,24 @@ public class CalificacionController {
     public ResponseEntity<CalificacionResponseDTO> obtenerCalificacion(
             @Parameter(description = "ID de la calificacion", required = true) @PathVariable String calificacionId) {
         return ResponseEntity.ok(calificacionService.obtenerPorId(calificacionId));
+    }
+
+    @Operation(summary = "Modificar una calificacion", description = "Solo el usuario que creo la calificacion puede modificarla.", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Calificacion modificada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "No eres el duenio de la calificacion"),
+            @ApiResponse(responseCode = "404", description = "Calificacion no encontrada")
+    })
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/{calificacionId}")
+    public ResponseEntity<CalificacionResponseDTO> modificarCalificacion(
+            @Parameter(description = "ID del spot", required = true) @PathVariable String spotId,
+            @Parameter(description = "ID de la calificacion a modificar", required = true) @PathVariable String calificacionId,
+            @Valid @RequestBody CalificacionRequestDTO request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String usuario = userDetails.getUsername();
+        return ResponseEntity.ok(calificacionService.modificarCalificacion(spotId, calificacionId, request, usuario));
     }
 }
