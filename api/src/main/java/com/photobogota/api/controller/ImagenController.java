@@ -43,6 +43,16 @@ public class ImagenController {
         return ResponseEntity.ok(Map.of("url", url));
     }
 
+    @Operation(summary = "Subir evidencia de un reporte", description = "Sube una captura de pantalla como evidencia. La URL devuelta se envía luego en 'evidencias' al crear el reporte.", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping(value = "/reporte", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Map<String, String>> subirEvidenciaReporte(
+            @RequestParam("file") MultipartFile file) throws IOException {
+        validarImagen(file);
+        String url = imagenService.subirEvidenciaReporte(file);
+        return ResponseEntity.ok(Map.of("url", url));
+    }
+
     private void validarImagen(MultipartFile file) {
         if (file.isEmpty()) throw new IllegalArgumentException("El archivo está vacío");
         if (file.getSize() > 5 * 1024 * 1024) throw new IllegalArgumentException("El archivo supera los 5MB");
