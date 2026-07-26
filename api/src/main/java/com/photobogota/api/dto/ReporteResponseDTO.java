@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.photobogota.api.model.CategoriaReporte;
 import com.photobogota.api.model.EstadoReporte;
+import com.photobogota.api.model.Gravedad;
 import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.TipoObjetivoReporte;
 
@@ -60,6 +61,24 @@ public class ReporteResponseDTO {
     @Schema(description = "Rol al que fue asignado automaticamente el reporte (MOD o ADMIN)")
     private Rol asignadoA;
 
+    @Schema(description = "Gravedad calculada automaticamente (BAJA, MEDIA, ALTA, CRITICA), usada para priorizar el dashboard")
+    private Gravedad gravedad;
+
+    @Schema(description = "true si un moderador escalo el reporte a un administrador")
+    private Boolean escalado;
+
+    @Schema(description = "Fecha en que se escalo el reporte, si aplica")
+    private LocalDateTime fechaEscalado;
+
+    @Schema(description = "nombreUsuario del moderador que escalo el reporte, si aplica")
+    private String escaladoPor;
+
+    @Schema(description = "Motivo por el que se escalo el reporte, si aplica")
+    private String motivoEscalado;
+
+    @Schema(description = "nombreUsuario de quien hizo el ultimo cambio de estado")
+    private String actualizadoPor;
+
     @Schema(description = "Estado actual del reporte")
     private EstadoReporte estado;
 
@@ -68,4 +87,18 @@ public class ReporteResponseDTO {
 
     @Schema(description = "Fecha de la ultima actualizacion del reporte")
     private LocalDateTime fechaActualizacion;
+
+    @Schema(description = "Bitacora de observaciones dejadas por MOD/ADMIN al cambiar el estado")
+    private List<ObservacionDTO> bitacora;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Schema(description = "Observacion registrada en la bitacora de un reporte")
+    public static class ObservacionDTO {
+        private String autor;
+        private String texto;
+        private LocalDateTime fecha;
+    }
 }

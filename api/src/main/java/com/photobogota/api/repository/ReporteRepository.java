@@ -17,4 +17,11 @@ public interface ReporteRepository extends MongoRepository<Reporte, String> {
     List<Reporte> findByAsignadoA(Rol asignadoA);
 
     List<Reporte> findByAsignadoAAndEstado(Rol asignadoA, EstadoReporte estado);
+
+    // Reincidencia: cuántos reportes activos (no resueltos/rechazados) existen
+    // ya sobre el mismo spot o la misma reseña. Se usa para subir la gravedad
+    // automáticamente cuando un mismo objetivo se reporta varias veces.
+    long countBySpotIdAndEstadoIn(String spotId, List<EstadoReporte> estados);
+
+    long countByResenaIdAndEstadoIn(String resenaId, List<EstadoReporte> estados);
 }
