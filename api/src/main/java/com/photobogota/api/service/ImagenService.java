@@ -26,6 +26,10 @@ public class ImagenService {
         return guardarArchivo(file, "spots");
     }
 
+    public String subirEvidenciaReporte(MultipartFile file) throws IOException {
+        return guardarArchivo(file, "reportes");
+    }
+
     private String guardarArchivo(MultipartFile file, String subcarpeta) throws IOException {
         // Ruta absoluta basada en el directorio de ejecución del proyecto
         Path carpeta = Paths.get(System.getProperty("user.dir"), uploadDir, subcarpeta);

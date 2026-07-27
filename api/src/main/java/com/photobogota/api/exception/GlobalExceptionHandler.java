@@ -113,6 +113,26 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
 
+    // 4.1 Acceso denegado por reglas de negocio (403), ej: reportar tu propia reseña
+    @ExceptionHandler(AccessForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessForbidden(
+            AccessForbiddenException ex, HttpServletRequest request) {
+
+        log.warn("Acceso prohibido por regla de negocio en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        Map<String, Object> body = buildBody(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
+    // 4.2 Operación inválida dado el estado actual del recurso (400)
+    @ExceptionHandler(OperacionInvalidaException.class)
+    public ResponseEntity<Map<String, Object>> handleOperacionInvalida(
+            OperacionInvalidaException ex, HttpServletRequest request) {
+
+        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
     // 3.1 No autorizado personalizado (401)
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Map<String, Object>> handleUnauthorized(
