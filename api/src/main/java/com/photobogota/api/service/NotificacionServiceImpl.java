@@ -1,7 +1,6 @@
 package com.photobogota.api.service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -17,9 +16,7 @@ import com.photobogota.api.model.CanalNotificacion;
 import com.photobogota.api.model.Notificacion;
 import com.photobogota.api.model.NotificacionTipo;
 import com.photobogota.api.model.PreferenciasNotificacion;
-import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.Spot;
-import com.photobogota.api.model.UsuarioAuth;
 import com.photobogota.api.repository.NotificacionRepository;
 import com.photobogota.api.repository.PreferenciasNotificacionRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
@@ -165,29 +162,32 @@ public class NotificacionServiceImpl implements INotificacionService {
         switch (request.getAlcance()) {
             case TODOS:
                 return usuarioAuthRepository.findAll().stream()
-                        .map(UsuarioAuth::getNombreUsuario)
+                        .filter(java.util.Objects::nonNull)
+                        .map(u -> u.getNombreUsuario())
                         .toList();
 
             case POR_ROL:
                 if (request.getRoles() == null || request.getRoles().isEmpty()) {
                     throw new IllegalArgumentException("Debes indicar al menos un rol para este alcance");
                 }
-                List<String> porRol = new ArrayList<>();
-                for (Rol rol : request.getRoles()) {
-                    usuarioAuthRepository.findByRol(rol)
-                            .forEach(u -> porRol.add(u.getNombreUsuario()));
-                }
-                return porRol.stream().distinct().toList();
+                return request.getRoles().stream()
+                        .filter(java.util.Objects::nonNull)
+                        .flatMap(rol -> usuarioAuthRepository.findByRol(rol).stream())
+                        .map(u -> u.getNombreUsuario())
+                        .distinct()
+                        .toList();
 
             case USUARIOS_ESPECIFICOS:
             default:
                 if (request.getUsernames() == null || request.getUsernames().isEmpty()) {
                     throw new IllegalArgumentException("Debes indicar al menos un usuario destinatario");
                 }
-                return request.getUsernames().stream().distinct().toList();
+                return request.getUsernames().stream()
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .toList();
         }
     }
-
     // ==================== DISPARADORES AUTOMÁTICOS ====================
 
     @Override
@@ -223,7 +223,8 @@ public class NotificacionServiceImpl implements INotificacionService {
                 spot.getId(), usuarioQueResenio);
     }
 
-    // ==================== NÚCLEO COMÚN: crear + enviar respetando preferencias ====================
+    // ==================== NÚCLEO COMÚN: crear + enviar respetando preferencias
+    // ====================
 
     private void crearYEnviar(PreferenciasNotificacion prefs, NotificacionTipo tipo, String titulo, String mensaje,
             String spotId, String emisorUsername) {
