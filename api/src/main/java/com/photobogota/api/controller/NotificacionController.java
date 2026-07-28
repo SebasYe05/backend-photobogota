@@ -14,6 +14,7 @@ import com.photobogota.api.dto.ContadorNotificacionesDTO;
 import com.photobogota.api.dto.EnviarNotificacionRequestDTO;
 import com.photobogota.api.dto.NotificacionResponseDTO;
 import com.photobogota.api.dto.PreferenciasNotificacionDTO;
+import com.photobogota.api.model.Notificacion;
 import com.photobogota.api.service.INotificacionService;
 import com.photobogota.api.utils.ApiConstants;
 
@@ -44,7 +45,8 @@ public class NotificacionController {
             @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaCreacion"));
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, Notificacion.FIELD_FECHA_CREACION));
         return ResponseEntity.ok(
                 notificacionService.listarMisNotificaciones(userDetails.getUsername(), pageable, soloNoLeidas));
     }
@@ -127,10 +129,10 @@ public class NotificacionController {
         return ResponseEntity.accepted().build();
     }
 
-    // Validaciones de alcance (ej. "POR_ROL" sin roles indicados) devuelven 400 en vez de 500.
+    // Validaciones de alcance (ej. "POR_ROL" sin roles indicados) devuelven 400 en
+    // vez de 500.
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleAlcanceInvalido(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }
-

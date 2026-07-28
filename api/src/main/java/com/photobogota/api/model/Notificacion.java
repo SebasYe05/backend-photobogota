@@ -23,6 +23,8 @@ import lombok.NoArgsConstructor;
 @Document(collection = "notificaciones")
 public class Notificacion {
 
+    public static final String FIELD_FECHA_CREACION = "fechaCreacion";
+
     @Id
     private String id;
 
