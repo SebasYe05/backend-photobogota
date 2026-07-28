@@ -27,11 +27,14 @@ public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
         private final RateLimitFilter rateLimitFilter;
+        private final MantenimientoFilter mantenimientoFilter;
 
         public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                        RateLimitFilter rateLimitFilter) {
+                        RateLimitFilter rateLimitFilter,
+                        MantenimientoFilter mantenimientoFilter) {
                 this.jwtAuthenticationFilter = jwtAuthenticationFilter;
                 this.rateLimitFilter = rateLimitFilter;
+                this.mantenimientoFilter = mantenimientoFilter;
         }
 
         @Bean
@@ -91,6 +94,11 @@ public class SecurityConfig {
                                                 // Monitoreo / Actuator
                                                 .requestMatchers("/actuator/**", "/api/v1/actuator/**").permitAll()
 
+                                                // Estado de mantenimiento (lo consulta el front para mostrar el aviso,
+                                                // incluso con el resto de rutas bloqueadas por el MantenimientoFilter)
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/mantenimiento/estado")
+                                                .permitAll()
+
                                                 // TODAS LAS RUTAS DE ADMIN (forma compacta)
                                                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
@@ -100,18 +108,6 @@ public class SecurityConfig {
                                                 // Crear reseñas
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/spots/*/resenas")
                                                 .authenticated()
-
-                                                // Crear calificaciones
-                                                .requestMatchers(HttpMethod.POST, "/api/v1/spots/*/calificaciones")
-                                                .authenticated()
-
-                                                // Modificar calificaciones
-                                                .requestMatchers(HttpMethod.PUT, "/api/v1/spots/*/calificaciones/*")
-                                                .authenticated()
-
-                                                // Calificaciones publicas (detalle)
-                                                .requestMatchers(HttpMethod.GET, "/api/v1/calificaciones/**")
-                                                .permitAll()
 
                                                 // Gestión del propio usuario
                                                 .requestMatchers(
@@ -131,7 +127,8 @@ public class SecurityConfig {
                                                 .anyRequest().authenticated())
 
                                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                                .addFilterBefore(jwtAuthenticationFilter, RateLimitFilter.class);
+                                .addFilterBefore(jwtAuthenticationFilter, RateLimitFilter.class)
+                                .addFilterAfter(mantenimientoFilter, RateLimitFilter.class);
 
                 return http.build();
         }
