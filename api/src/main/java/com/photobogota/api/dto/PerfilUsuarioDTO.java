@@ -35,26 +35,11 @@ public class PerfilUsuarioDTO {
     @Schema(description = "Tipo de usuario", example = "MIEMBRO")
     private String tipoUsuario;
 
-    @Schema(description = "Rol del usuario en mayúsculas", example = "MIEMBRO")
-    private String rol;
-
     @Schema(description = "Número de puntos acumulados", example = "150")
     @Builder.Default
-    private Long puntos = 0L;
+    private Long puntos = 0L; 
 
     @Schema(description = "Nivel del usuario basado en los puntos acumulados", example = "1")
-    @Builder.Default
+    @Builder.Default 
     private Integer nivel = 1;
-
-    @Schema(description = "Total de spots creados por el usuario", example = "5")
-    @Builder.Default
-    private Long totalSpots = 0L;
-
-    @Schema(description = "Total de reseñas escritas por el usuario", example = "3")
-    @Builder.Default
-    private Long totalResenas = 0L;
-
-    @Schema(description = "Total de spots guardados por el usuario", example = "2")
-    @Builder.Default
-    private Long totalGuardados = 0L;
 }

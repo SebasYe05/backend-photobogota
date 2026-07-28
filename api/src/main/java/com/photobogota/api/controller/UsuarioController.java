@@ -15,8 +15,6 @@ import com.photobogota.api.dto.CambiarContrasenaDTO;
 import com.photobogota.api.dto.CambiarContrasenaResponseDTO;
 import com.photobogota.api.dto.EditarPerfilDTO;
 import com.photobogota.api.dto.PerfilUsuarioDTO;
-import com.photobogota.api.dto.ResenaDTO;
-import com.photobogota.api.dto.SpotResponseDTO;
 import com.photobogota.api.service.IUsuarioService;
 import com.photobogota.api.utils.ApiConstants;
 
@@ -28,8 +26,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
 
 @RestController
 @RequestMapping(ApiConstants.V1 + "/usuarios")
@@ -76,42 +72,5 @@ public class UsuarioController {
             @Valid @RequestBody CambiarContrasenaDTO dto) {
         CambiarContrasenaResponseDTO response = usuarioService.cambiarContrasena(currentUser.getUsername(), dto);
         return ResponseEntity.ok(response);
-    }
-
-    @Operation(summary = "Mis spots", description = "Retorna todos los spots creados por el usuario autenticado", security = @SecurityRequirement(name = "bearerAuth"))
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de spots del usuario"),
-            @ApiResponse(responseCode = "401", description = "No autenticado"),
-            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
-    })
-    @GetMapping("/{nombreUsuario}/spots")
-    public ResponseEntity<List<SpotResponseDTO>> spotsDeUsuario(
-            @AuthenticationPrincipal UserDetails currentUser,
-            @Parameter(description = "Nombre de usuario", example = "fotografo_bogota") @PathVariable String nombreUsuario) {
-        return ResponseEntity.ok(usuarioService.obtenerSpotsDeUsuario(nombreUsuario));
-    }
-
-    @Operation(summary = "Mis reseñas", description = "Retorna todas las reseñas escritas por el usuario autenticado", security = @SecurityRequirement(name = "bearerAuth"))
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de reseñas del usuario"),
-            @ApiResponse(responseCode = "401", description = "No autenticado"),
-            @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
-    })
-    @GetMapping("/{nombreUsuario}/resenas")
-    public ResponseEntity<List<ResenaDTO>> resenasDeUsuario(
-            @AuthenticationPrincipal UserDetails currentUser,
-            @Parameter(description = "Nombre de usuario", example = "fotografo_bogota") @PathVariable String nombreUsuario) {
-        return ResponseEntity.ok(usuarioService.obtenerResenasDeUsuario(nombreUsuario));
-    }
-
-    @Operation(summary = "Mis spots guardados", description = "Retorna todos los spots guardados por el usuario autenticado", security = @SecurityRequirement(name = "bearerAuth"))
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de spots guardados"),
-            @ApiResponse(responseCode = "401", description = "No autenticado")
-    })
-    @GetMapping("/me/guardados")
-    public ResponseEntity<List<SpotResponseDTO>> misGuardados(
-            @AuthenticationPrincipal UserDetails currentUser) {
-        return ResponseEntity.ok(usuarioService.obtenerGuardados(currentUser.getUsername()));
     }
 }
