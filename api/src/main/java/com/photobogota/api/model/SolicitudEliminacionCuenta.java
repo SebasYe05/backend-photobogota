@@ -49,4 +49,17 @@ public class SolicitudEliminacionCuenta {
     private LocalDateTime fechaCancelacion;
 
     private LocalDateTime fechaCompletada;
+
+    // ── Campos de procesamiento administrativo (Etapa 2) ──
+
+    // true si un ADMIN forzó el procesamiento (anonimización inmediata,
+    // sin esperar los 30 días) en lugar del job automático.
+    @Builder.Default
+    private Boolean procesadaManualmente = false;
+
+    // nombreUsuario del administrador que procesó o rechazó la solicitud
+    private String procesadaPorAdmin;
+
+    // Nota interna dejada por el administrador al procesar/rechazar
+    private String observacionAdmin;
 }

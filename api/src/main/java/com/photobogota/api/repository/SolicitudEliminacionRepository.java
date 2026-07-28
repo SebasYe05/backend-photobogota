@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.bson.types.ObjectId;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import com.photobogota.api.model.EstadoSolicitudEliminacion;
@@ -31,4 +33,17 @@ public interface SolicitudEliminacionRepository extends MongoRepository<Solicitu
      */
     List<SolicitudEliminacionCuenta> findByEstadoAndFechaProgramadaEliminacionBefore(
             EstadoSolicitudEliminacion estado, LocalDateTime fecha);
+
+    // ── Etapa 2: dashboard de administración ──
+
+    /**
+     * Listado paginado filtrado por estado, para el dashboard de ADMIN.
+     */
+    Page<SolicitudEliminacionCuenta> findByEstado(EstadoSolicitudEliminacion estado, Pageable pageable);
+
+    /**
+     * Todas las solicitudes en un estado dado (sin paginar), usado para las
+     * métricas agregadas.
+     */
+    List<SolicitudEliminacionCuenta> findByEstado(EstadoSolicitudEliminacion estado);
 }

@@ -15,4 +15,11 @@ public interface SpotRepository extends MongoRepository<Spot, String> {
 
     @Query("{ 'nombre': { $regex: ?0, $options: 'i' } }")
     List<Spot> findByNombreContainingIgnoreCase(String nombre);
+
+    /**
+     * Spots creados por un usuario específico (SOCIO/MODERADOR). Se usa al
+     * procesar la eliminación de una cuenta para detectar dependencias y
+     * anonimizar al creador sin borrar el spot ni sus estadísticas.
+     */
+    List<Spot> findByCreadorUsername(String creadorUsername);
 }
