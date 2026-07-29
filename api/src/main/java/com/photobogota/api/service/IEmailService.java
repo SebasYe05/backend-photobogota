@@ -36,4 +36,43 @@ public interface IEmailService {
      * @return String con el HTML del correo
      */
     String construirHtmlRecuperacion(String nombreUsuario, String codigo);
+
+    /**
+     * Construye el HTML del correo con el código de verificación para
+     * solicitar la eliminación de la cuenta. Incluye advertencia sobre la
+     * pérdida de datos.
+     *
+     * @param nombreUsuario Nombre del usuario
+     * @param codigo        Código de verificación
+     * @return String con el HTML del correo
+     */
+    String construirHtmlSolicitudEliminacion(String nombreUsuario, String codigo);
+
+    /**
+     * Construye el HTML del correo que confirma que la eliminación de cuenta
+     * quedó programada, indicando la fecha límite para recuperarla.
+     *
+     * @param nombreUsuario     Nombre del usuario
+     * @param fechaProgramada   Fecha formateada en la que se eliminará la cuenta
+     * @return String con el HTML del correo
+     */
+    String construirHtmlConfirmacionEliminacion(String nombreUsuario, String fechaProgramada);
+
+    /**
+     * Construye el HTML del correo que confirma que la eliminación de cuenta
+     * fue cancelada y la cuenta quedó reactivada.
+     *
+     * @param nombreUsuario Nombre del usuario
+     * @return String con el HTML del correo
+     */
+    String construirHtmlCancelacionEliminacion(String nombreUsuario);
+
+    /**
+     * Construye el HTML del correo final que confirma que la cuenta y sus
+     * datos personales fueron eliminados/anonimizados definitivamente.
+     *
+     * @param nombreUsuario Nombre del usuario
+     * @return String con el HTML del correo
+     */
+    String construirHtmlEliminacionCompletada(String nombreUsuario);
 }

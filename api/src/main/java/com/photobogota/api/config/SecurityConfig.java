@@ -116,6 +116,10 @@ public class SecurityConfig {
                                                                 "/api/v1/auth/me")
                                                 .authenticated()
 
+                                                // Autoeliminación de cuenta: solo MIEMBRO
+                                                .requestMatchers("/api/v1/usuarios/me/eliminacion/**")
+                                                .hasRole("MIEMBRO")
+
                                                 // RUTAS DE MODERADOR
                                                 .requestMatchers("/api/v1/moderador/**").hasRole("MOD")
                                                 // RUTAS DE ADMINISTRADOR

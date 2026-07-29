@@ -24,4 +24,15 @@ public interface ReporteRepository extends MongoRepository<Reporte, String> {
     long countBySpotIdAndEstadoIn(String spotId, List<EstadoReporte> estados);
 
     long countByResenaIdAndEstadoIn(String resenaId, List<EstadoReporte> estados);
+
+    // ── Etapa 2 (eliminación de cuenta): dependencias pendientes ──
+
+    // Reportes que el propio usuario presentó y siguen pendientes.
+    List<Reporte> findByReportadoPorAndEstadoIn(String reportadoPor, List<EstadoReporte> estados);
+
+    // Reportes pendientes sobre spots creados por el usuario.
+    List<Reporte> findBySpotIdInAndEstadoIn(List<String> spotIds, List<EstadoReporte> estados);
+
+    // Reportes pendientes sobre reseñas escritas por el usuario.
+    List<Reporte> findByAutorResenaReportadaAndEstadoIn(String autorResenaReportada, List<EstadoReporte> estados);
 }

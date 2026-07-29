@@ -159,6 +159,7 @@ public class AuthServiceImpl implements IAuthService {
         Sesion sesion = Sesion.builder()
                 .refreshToken(refreshToken)
                 .id(usuario.getId())
+                .usuarioId(usuario.getId().toString())
                 .nombreUsuario(usuario.getNombreUsuario())
                 .rol(usuario.getRol().name())
                 .creadoEn(Instant.now())
