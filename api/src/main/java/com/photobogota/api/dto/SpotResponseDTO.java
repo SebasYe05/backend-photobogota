@@ -54,6 +54,12 @@ public class SpotResponseDTO {
     @Schema(description = "ID del usuario que creó el spot")
     private String usuarioId;
 
+    @Schema(description = "Nombre de usuario de quien creó el spot", example = "23bitss")
+    private String creadorUsername;
+
+    @Schema(description = "Objeto con el creador del spot identificable por username")
+    private SpotResumenDTO.CreadorDTO creador;
+
     @Schema(description = "Rol del usuario que creó el spot", example = "MIEMBRO")
     private String rol;
 

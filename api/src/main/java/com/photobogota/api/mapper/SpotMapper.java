@@ -18,6 +18,7 @@ public interface SpotMapper {
     @Mapping(target = "usuarioId", source = "creadorUsername")
     @Mapping(target = "rol", source = "creadorRol")
     @Mapping(target = "createdAt", source = "creadoEn")
+    @Mapping(target = "creador", expression = "java(toCreadorDTO(spot))")
     SpotResumenDTO toResumen(Spot spot);
 
     // Lista de spots → Lista de resúmenes
@@ -29,7 +30,20 @@ public interface SpotMapper {
     @Mapping(target = "usuarioId", source = "creadorUsername")
     @Mapping(target = "rol", source = "creadorRol")
     @Mapping(target = "createdAt", source = "creadoEn")
+    @Mapping(target = "creador", expression = "java(toCreadorDTO(spot))")
     SpotResponseDTO toResponse(Spot spot);
+
+    // Construye el objeto anidado "creador" ({ nombreUsuario, rol }) a partir de los
+    // campos planos del Spot, para que el front no dependa de un id opaco (usuarioId)
+    default SpotResumenDTO.CreadorDTO toCreadorDTO(Spot spot) {
+        if (spot == null || spot.getCreadorUsername() == null) {
+            return null;
+        }
+        SpotResumenDTO.CreadorDTO creador = new SpotResumenDTO.CreadorDTO();
+        creador.setNombreUsuario(spot.getCreadorUsername());
+        creador.setRol(spot.getCreadorRol());
+        return creador;
+    }
 
     // Spot.Resena → SpotResponseDTO.ResenaResponseDTO
     @Mapping(target = "fecha", expression = "java(formatearFecha(resena.getFecha()))")

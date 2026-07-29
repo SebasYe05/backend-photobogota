@@ -87,9 +87,25 @@ public class SecurityConfig {
                                                                 "/api/v1/localidades")
                                                 .permitAll()
 
-                                                // Perfiles públicos (solo lectura)
-                                                .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/perfil/**")
-                                                .permitAll()
+// Perfiles públicos (solo lectura)
+                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/perfil/**")
+                                                 .permitAll()
+                                                 // Rutas del propio usuario (autenticación requerida) - más específicas primero
+                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/me/spots")
+                                                 .authenticated()
+                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/me/resenas")
+                                                 .authenticated()
+                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/me/guardados")
+                                                 .authenticated()
+                                                 .requestMatchers(HttpMethod.POST, "/api/v1/usuarios/me/guardados/**")
+                                                 .authenticated()
+                                                 .requestMatchers(HttpMethod.DELETE, "/api/v1/usuarios/me/guardados/**")
+                                                 .authenticated()
+                                                 // Spots y reseñas públicos de cualquier usuario
+                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/*/spots")
+                                                 .permitAll()
+                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/*/resenas")
+                                                 .permitAll()
 
                                                 // Monitoreo / Actuator
                                                 .requestMatchers("/actuator/**", "/api/v1/actuator/**").permitAll()
