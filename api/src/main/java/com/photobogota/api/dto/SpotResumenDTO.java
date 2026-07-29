@@ -54,9 +54,25 @@ public class SpotResumenDTO {
     @Schema(description = "ID del usuario que creó el spot", example = "user123")
     private String usuarioId;
 
+    @Schema(description = "Nombre de usuario de quien creó el spot", example = "23bitss")
+    private String creadorUsername;
+
+    @Schema(description = "Objeto con el creador del spot identificable por username")
+    private CreadorDTO creador;
+
     @Schema(description = "Rol del usuario que creó el spot", example = "MIEMBRO")
     private String rol;
 
     @Schema(description = "Fecha de creación del spot", example = "2023-01-01T00:00:00Z")
     private String createdAt;
+
+    @Data
+    @Schema(description = "Creador del spot identificable por username")
+    public static class CreadorDTO {
+        @Schema(description = "Nombre de usuario del creador", example = "23bitss")
+        private String nombreUsuario;
+
+        @Schema(description = "Rol del creador", example = "MIEMBRO")
+        private String rol;
+    }
 }

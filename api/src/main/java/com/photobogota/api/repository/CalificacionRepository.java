@@ -10,4 +10,8 @@ public interface CalificacionRepository extends MongoRepository<Calificacion, St
     List<Calificacion> findBySpotId(String spotId);
 
     Calificacion findBySpotIdAndUsuario(String spotId, String usuario);
+
+    List<Calificacion> findByUsuario(String usuario);
+
+    long countByUsuario(String usuario);
 }

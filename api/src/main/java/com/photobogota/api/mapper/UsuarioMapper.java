@@ -16,17 +16,23 @@ public interface UsuarioMapper {
     // Si el objeto real es un Miembro, MapStruct usará toDTO(Miembro)
     // automáticamente
     @SubclassMapping(source = Miembro.class, target = PerfilUsuarioDTO.class)
-    @Mapping(target = "tipoUsuario", expression = "java(usuario.getClass().getSimpleName().toUpperCase())")
+    @Mapping(target = "rol", expression = "java(usuario.getClass().getSimpleName().toUpperCase())")
     @Mapping(target = "puntos", ignore = true)
     @Mapping(target = "nivel", ignore = true)
     @Mapping(target = "email", ignore = true)
     @Mapping(target = "nombreUsuario", ignore = true)
+    @Mapping(target = "totalSpots", ignore = true)
+    @Mapping(target = "totalResenas", ignore = true)
+    @Mapping(target = "totalGuardados", ignore = true)
     PerfilUsuarioDTO toDTO(Usuario usuario);
 
     // Mapeo específico para Miembro (para que no pierda puntos ni nivel)
-    @Mapping(target = "tipoUsuario", constant = "miembro")
+    @Mapping(target = "rol", constant = "MIEMBRO")
     @Mapping(target = "email", ignore = true)
     @Mapping(target = "nombreUsuario", ignore = true)
+    @Mapping(target = "totalSpots", ignore = true)
+    @Mapping(target = "totalResenas", ignore = true)
+    @Mapping(target = "totalGuardados", ignore = true)
     PerfilUsuarioDTO toDTO(Miembro miembro);
 
     // Mapeo de Registro a Entidad

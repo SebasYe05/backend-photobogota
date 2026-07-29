@@ -15,4 +15,8 @@ public interface SpotRepository extends MongoRepository<Spot, String> {
 
     @Query("{ 'nombre': { $regex: ?0, $options: 'i' } }")
     List<Spot> findByNombreContainingIgnoreCase(String nombre);
+
+    List<Spot> findByCreadorUsername(String creadorUsername);
+
+    long countByCreadorUsername(String creadorUsername);
 }
