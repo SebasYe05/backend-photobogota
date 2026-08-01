@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import com.photobogota.api.dto.EnviarNotificacionRequestDTO;
 import com.photobogota.api.dto.NotificacionResponseDTO;
 import com.photobogota.api.dto.PreferenciasNotificacionDTO;
+import com.photobogota.api.model.Calificacion;
 import com.photobogota.api.model.Spot;
 
 public interface INotificacionService {
@@ -37,4 +38,6 @@ public interface INotificacionService {
     void notificarNuevoSpot(Spot spot);
 
     void notificarNuevaResena(Spot spot, Spot.Resena resena, String usuarioQueResenio);
+
+    void notificarNuevaCalificacion(Spot spot, Calificacion calificacion, String usuarioQueCalifico);
 }
