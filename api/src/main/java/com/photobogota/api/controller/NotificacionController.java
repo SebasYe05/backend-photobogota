@@ -99,7 +99,7 @@ public class NotificacionController {
         return ResponseEntity.ok(notificacionService.obtenerPreferencias(userDetails.getUsername()));
     }
 
-    @Operation(summary = "Actualizar mis preferencias de notificaciones", description = "Actualización parcial: solo se modifican los campos enviados (activar/desactivar, canal, tipos silenciados, zonas/categorías de interés).")
+    @Operation(summary = "Actualizar mis preferencias de notificaciones", description = "Actualización parcial: solo se modifican los campos enviados (activar/desactivar, canal, zonas/categorías de interés).")
     @ApiResponse(responseCode = "200", description = "Preferencias actualizadas")
     @PutMapping("/preferencias")
     public ResponseEntity<PreferenciasNotificacionDTO> actualizarPreferencias(

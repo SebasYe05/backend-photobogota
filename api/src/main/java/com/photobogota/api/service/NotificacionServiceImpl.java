@@ -105,9 +105,6 @@ public class NotificacionServiceImpl implements INotificacionService {
         if (dto.getCanalPreferido() != null) {
             prefs.setCanalPreferido(dto.getCanalPreferido());
         }
-        if (dto.getTiposSilenciados() != null) {
-            prefs.setTiposSilenciados(dto.getTiposSilenciados());
-        }
         if (dto.getLocalidadesInteres() != null) {
             prefs.setLocalidadesInteres(dto.getLocalidadesInteres());
         }
@@ -129,7 +126,6 @@ public class NotificacionServiceImpl implements INotificacionService {
         return PreferenciasNotificacionDTO.builder()
                 .notificacionesActivas(prefs.getNotificacionesActivas())
                 .canalPreferido(prefs.getCanalPreferido())
-                .tiposSilenciados(prefs.getTiposSilenciados())
                 .localidadesInteres(prefs.getLocalidadesInteres())
                 .categoriasInteres(prefs.getCategoriasInteres())
                 .build();
@@ -247,9 +243,6 @@ public class NotificacionServiceImpl implements INotificacionService {
 
         if (!Boolean.TRUE.equals(prefs.getNotificacionesActivas())) {
             return; // el usuario desactivó las notificaciones (criterio de aceptación #4)
-        }
-        if (prefs.getTiposSilenciados() != null && prefs.getTiposSilenciados().contains(tipo)) {
-            return; // el usuario silenció este tipo específico
         }
 
         Notificacion notificacion = Notificacion.builder()

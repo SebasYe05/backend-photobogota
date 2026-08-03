@@ -27,4 +27,7 @@ public interface MantenimientoRepository extends MongoRepository<MantenimientoPr
 
     // Listado para la UI de admin: todos los programados (activos, futuros o recién pasados) sin cancelar
     List<MantenimientoProgramado> findByCanceladoFalseOrderByFechaInicioDesc();
+
+    // Historial completo para la UI de admin (incluye cancelados, para mostrar su badge)
+    List<MantenimientoProgramado> findAllByOrderByFechaInicioDesc();
 }

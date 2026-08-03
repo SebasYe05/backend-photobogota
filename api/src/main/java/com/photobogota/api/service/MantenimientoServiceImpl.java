@@ -100,7 +100,7 @@ public class MantenimientoServiceImpl implements IMantenimientoService {
 
     @Override
     public List<MantenimientoResponseDTO> listarProgramados() {
-        return mantenimientoRepository.findByCanceladoFalseOrderByFechaInicioDesc().stream()
+        return mantenimientoRepository.findAllByOrderByFechaInicioDesc().stream()
                 .map(this::mapearAResponse)
                 .toList();
     }

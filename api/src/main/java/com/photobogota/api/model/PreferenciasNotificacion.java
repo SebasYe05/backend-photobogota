@@ -36,9 +36,6 @@ public class PreferenciasNotificacion {
     @Builder.Default
     private CanalNotificacion canalPreferido = CanalNotificacion.APP;
 
-    @Builder.Default
-    private List<NotificacionTipo> tiposSilenciados = new ArrayList<>();
-
     // Localidades de interés para alertar sobre spots nuevos (ej: "Chapinero", "Usaquén")
     @Builder.Default
     private List<String> localidadesInteres = new ArrayList<>();

@@ -3,7 +3,6 @@ package com.photobogota.api.dto;
 import java.util.List;
 
 import com.photobogota.api.model.CanalNotificacion;
-import com.photobogota.api.model.NotificacionTipo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,7 +22,6 @@ public class PreferenciasNotificacionDTO {
 
     private Boolean notificacionesActivas;
     private CanalNotificacion canalPreferido;
-    private List<NotificacionTipo> tiposSilenciados;
     private List<String> localidadesInteres;
     private List<String> categoriasInteres;
 }
