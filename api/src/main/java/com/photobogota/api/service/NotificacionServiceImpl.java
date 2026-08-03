@@ -13,7 +13,6 @@ import com.photobogota.api.dto.PreferenciasNotificacionDTO;
 import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.mapper.NotificacionMapper;
 import com.photobogota.api.model.CanalNotificacion;
-import com.photobogota.api.model.Calificacion;
 import com.photobogota.api.model.Notificacion;
 import com.photobogota.api.model.NotificacionTipo;
 import com.photobogota.api.model.PreferenciasNotificacion;
@@ -221,18 +220,18 @@ public class NotificacionServiceImpl implements INotificacionService {
     }
 
     @Override
-    public void notificarNuevaCalificacion(Spot spot, Calificacion calificacion, String usuarioQueCalifico) {
-        String destinatario = spot.getCreadorUsername();
-        if (destinatario == null || destinatario.equals(usuarioQueCalifico)) {
-            return; // no notificar auto-calificaciones ni spots sin dueño
-        }
+    public void notificarSistema(String destinatarioUsername, String titulo, String mensaje) {
+        Notificacion notificacion = Notificacion.builder()
+                .destinatarioUsername(destinatarioUsername)
+                .tipo(NotificacionTipo.SISTEMA)
+                .titulo(titulo)
+                .mensaje(mensaje)
+                .emisorUsername("sistema")
+                .leida(false)
+                .fechaCreacion(LocalDateTime.now())
+                .build();
 
-        String titulo = "Nueva reseña en tu spot";
-        String mensaje = usuarioQueCalifico + " calificó \"" + spot.getNombre() + "\" con "
-                + calificacion.getEstrellas() + " estrella(s).";
-
-        crearYEnviar(obtenerPreferenciasEfectivas(destinatario), NotificacionTipo.NUEVA_RESENA, titulo, mensaje,
-                spot.getId(), usuarioQueCalifico);
+        notificacionRepository.save(notificacion);
     }
 
     // ==================== NÚCLEO COMÚN: crear + enviar respetando preferencias

@@ -6,7 +6,6 @@ import org.springframework.data.domain.Pageable;
 import com.photobogota.api.dto.EnviarNotificacionRequestDTO;
 import com.photobogota.api.dto.NotificacionResponseDTO;
 import com.photobogota.api.dto.PreferenciasNotificacionDTO;
-import com.photobogota.api.model.Calificacion;
 import com.photobogota.api.model.Spot;
 
 public interface INotificacionService {
@@ -39,5 +38,10 @@ public interface INotificacionService {
 
     void notificarNuevaResena(Spot spot, Spot.Resena resena, String usuarioQueResenio);
 
-    void notificarNuevaCalificacion(Spot spot, Calificacion calificacion, String usuarioQueCalifico);
+    // Notificación de sistema puntual para un usuario ya identificado por su
+    // nombreUsuario (ej: aprobación de membresía, envío de credenciales).
+    // A diferencia de notificarNuevoSpot/notificarNuevaResena, esta no
+    // respeta preferencias de silencio: es información crítica de la cuenta,
+    // no un aviso discrecional.
+    void notificarSistema(String destinatarioUsername, String titulo, String mensaje);
 }

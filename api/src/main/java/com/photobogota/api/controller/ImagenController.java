@@ -53,10 +53,27 @@ public class ImagenController {
         return ResponseEntity.ok(Map.of("url", url));
     }
 
+    @Operation(summary = "Subir documento de aspirante a socio", description = "Sube el RUT/cédula (PDF o imagen) de un aspirante. No requiere cuenta, ya que el aspirante aún no tiene una.")
+    @PostMapping(value = "/aspirante-documento", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, String>> subirDocumentoAspirante(
+            @RequestParam("file") MultipartFile file) throws IOException {
+        validarDocumento(file);
+        String url = imagenService.subirDocumentoAspirante(file);
+        return ResponseEntity.ok(Map.of("url", url));
+    }
+
     private void validarImagen(MultipartFile file) {
         if (file.isEmpty()) throw new IllegalArgumentException("El archivo está vacío");
         if (file.getSize() > 5 * 1024 * 1024) throw new IllegalArgumentException("El archivo supera los 5MB");
         String ct = file.getContentType();
         if (ct == null || !ct.startsWith("image/")) throw new IllegalArgumentException("Solo se permiten imágenes");
+    }
+
+    private void validarDocumento(MultipartFile file) {
+        if (file.isEmpty()) throw new IllegalArgumentException("El archivo está vacío");
+        if (file.getSize() > 5 * 1024 * 1024) throw new IllegalArgumentException("El archivo supera los 5MB");
+        String ct = file.getContentType();
+        boolean esValido = ct != null && (ct.startsWith("image/") || ct.equals("application/pdf"));
+        if (!esValido) throw new IllegalArgumentException("Solo se permiten archivos PDF o imágenes (JPG, PNG)");
     }
 }

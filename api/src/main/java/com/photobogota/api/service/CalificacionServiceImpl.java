@@ -23,7 +23,6 @@ public class CalificacionServiceImpl implements ICalificacionService {
 
     private final CalificacionRepository calificacionRepository;
     private final SpotRepository spotRepository;
-    private final INotificacionService notificacionService;
 
     @Override
     @Transactional
@@ -45,12 +44,6 @@ public class CalificacionServiceImpl implements ICalificacionService {
         log.info("Calificacion creada para spot {} por usuario {}", spotId, usuario);
 
         recalcularRatingSpot(spotId);
-
-        try {
-            notificacionService.notificarNuevaCalificacion(spot, calificacion, usuario);
-        } catch (Exception e) {
-            log.error("No se pudo notificar la nueva calificacion en el spot {}: {}", spotId, e.getMessage());
-        }
 
         return CalificacionResponseDTO.from(calificacion);
     }
