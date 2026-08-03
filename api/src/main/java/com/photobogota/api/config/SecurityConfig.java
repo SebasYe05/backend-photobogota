@@ -72,12 +72,20 @@ public class SecurityConfig {
                                                                 "/api/v1/auth/refresh")
                                                 .permitAll()
 
-                                                // Listado público de aspirantes (y sus detalles)
-                                                .requestMatchers(HttpMethod.GET, "/api/v1/aspirantes",
-                                                                "/api/v1/aspirantes/**")
-                                                .permitAll()
-                                                // Aspirantes: crear solicitud sin cuenta
+                                                // Aspirantes: crear solicitud sin cuenta y subir su documento
                                                 .requestMatchers(HttpMethod.POST, "/api/v1/aspirantes").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/v1/imagenes/aspirante-documento")
+                                                .permitAll()
+                                                // Aspirantes: consultar el estado de la propia solicitud por código
+                                                // y reenviar documentos tras una corrección (sin cuenta)
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/aspirantes/codigo/**")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.PUT, "/api/v1/aspirantes/codigo/*/reenviar")
+                                                .permitAll()
+                                                // El resto de /api/v1/aspirantes/** (listar, ver por id/email,
+                                                // aprobar, rechazar, corregir, comentarios, estadísticas) requiere
+                                                // MOD o ADMIN; queda cubierto por @PreAuthorize en el controlador
+                                                // y por la regla genérica de autenticación más abajo.
 
                                                 // Spots públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/spots/**").permitAll()

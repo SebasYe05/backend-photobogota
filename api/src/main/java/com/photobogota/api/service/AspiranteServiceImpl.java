@@ -1,13 +1,18 @@
 package com.photobogota.api.service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import com.photobogota.api.dto.AspiranteResponseDTO;
+import com.photobogota.api.dto.EstadisticasAspiranteDTO;
+import com.photobogota.api.dto.ReenvioDocumentosDTO;
 import com.photobogota.api.dto.SolicitudAspiranteDTO;
 import com.photobogota.api.exception.AspiranteAlreadyExistsException;
+import com.photobogota.api.exception.OperacionInvalidaException;
+import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.mapper.AspiranteMapper;
 import com.photobogota.api.model.Aspirante;
 import com.photobogota.api.model.EstadoAspirante;
@@ -39,13 +44,13 @@ public class AspiranteServiceImpl implements IAspiranteService {
 
         Aspirante aspirante = mapearSolicitud(request, codigoGenerado);
         Aspirante savedAspirante = aspiranteRepository.save(aspirante);
-        
+
         String htmlContent = construirHtmlSolicitud(
             request.getNombres(),
             request.getApellidos(),
             codigoGenerado
         );
-        
+
         try {
             emailService.enviarCorreoHtml(
                 request.getEmail(),
@@ -56,9 +61,9 @@ public class AspiranteServiceImpl implements IAspiranteService {
         } catch (Exception e) {
             log.error("Error al enviar correo a {}: {}", request.getEmail(), e.getMessage());
         }
-        
+
         log.info("Solicitud creada para {} con código {}", request.getEmail(), codigoGenerado);
-        
+
         return aspiranteMapper.toResponse(savedAspirante);
     }
 
@@ -80,6 +85,7 @@ public class AspiranteServiceImpl implements IAspiranteService {
         aspirante.setEstado(EstadoAspirante.PENDIENTE);
         aspirante.setFechaSolicitud(LocalDate.now());
         aspirante.setCodigo(codigo);
+        aspirante.setVecesCorregida(0);
         return aspirante;
     }
 
@@ -90,6 +96,52 @@ public class AspiranteServiceImpl implements IAspiranteService {
     }
 
     private String construirHtmlSolicitud(String nombres, String apellidos, String codigo) {
+        return construirPlantillaBase(
+            "¡Hola, " + nombres + " " + apellidos + "!",
+            "Tu solicitud para convertirte en socio de PhotoBogota ha sido registrada exitosamente.",
+            codigo,
+            "Guarda este código para dar seguimiento a tu solicitud. Nuestro equipo la revisará y te contactaremos pronto."
+        );
+    }
+
+    private String construirHtmlCorreccion(String nombres, String apellidos, String codigo, String motivo) {
+        return construirPlantillaBase(
+            "Hola, " + nombres + " " + apellidos,
+            "Un moderador de PhotoBogota revisó tu solicitud y necesita que corrijas algunos datos o documentos antes de continuar.",
+            codigo,
+            "<strong>Motivo:</strong> " + motivo
+                + "<br/><br/>Ingresa con tu código de solicitud a la sección \"Consultar solicitud\" para reenviar tu documentación."
+        );
+    }
+
+    private String construirHtmlRechazo(String nombres, String apellidos, String codigo, String motivo) {
+        return construirPlantillaBase(
+            "Hola, " + nombres + " " + apellidos,
+            "Lamentamos informarte que tu solicitud para ser socio de PhotoBogota fue rechazada.",
+            codigo,
+            "<strong>Motivo:</strong> " + motivo
+        );
+    }
+
+    private String construirHtmlAprobado(String nombres, String apellidos, String codigo) {
+        return construirPlantillaBase(
+            "¡Felicidades, " + nombres + " " + apellidos + "!",
+            "Tu solicitud para ser socio de PhotoBogota fue aprobada. Estamos preparando la creación de tu cuenta.",
+            codigo,
+            "En los próximos días recibirás un correo con tus credenciales de acceso a la plataforma."
+        );
+    }
+
+    private String construirHtmlReenvioConfirmado(String nombres, String apellidos, String codigo) {
+        return construirPlantillaBase(
+            "Hola, " + nombres + " " + apellidos,
+            "Recibimos los documentos que reenviaste para tu solicitud de ingreso a PhotoBogota.",
+            codigo,
+            "Tu solicitud vuelve a estar en revisión. Te notificaremos por correo en cuanto sea evaluada nuevamente."
+        );
+    }
+
+    private String construirPlantillaBase(String titulo, String parrafo, String codigo, String infoAdicional) {
         return """
             <!DOCTYPE html>
             <html lang="es">
@@ -160,48 +212,45 @@ public class AspiranteServiceImpl implements IAspiranteService {
                         <p>Solicitud de Socio</p>
                     </div>
                     <div class="content">
-                        <h2>¡Hola, %NOMBRE%!</h2>
-                        <p>Tu solicitud para convertirte en socio de PhotoBogota ha sido registrada exitosamente.</p>
-                        <p>Tu código de seguimiento es:</p>
+                        <h2>%TITULO%</h2>
+                        <p>%PARRAFO%</p>
                         <div class="code-box">
                             <span class="code">%CODIGO%</span>
                         </div>
                         <div class="info-box">
-                            <p><strong>Guarda este código</strong> para dar seguimiento a tu solicitud.</p>
-                            <p>Nuestro equipo revisará tu solicitud y te contactaremos pronto.</p>
+                            <p>%INFO_ADICIONAL%</p>
                         </div>
-                        <p>Gracias por tu interés en ser parte de nuestra comunidad fotográfica.</p>
                     </div>
                     <div class="footer">
-                        <p>© 2024 PhotoBogota. Todos los derechos reservados.</p>
+                        <p>© 2026 PhotoBogota. Todos los derechos reservados.</p>
                         <p>Este correo fue enviado automáticamente.</p>
                     </div>
                 </div>
             </body>
             </html>
             """
-            .replace("%NOMBRE%", nombres + " " + apellidos)
-            .replace("%CODIGO%", codigo);
+            .replace("%TITULO%", titulo)
+            .replace("%PARRAFO%", parrafo)
+            .replace("%CODIGO%", codigo)
+            .replace("%INFO_ADICIONAL%", infoAdicional);
     }
 
     @Override
     public AspiranteResponseDTO obtenerPorId(String id) {
-        Aspirante aspirante = aspiranteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Aspirante no encontrado con id: " + id));
+        Aspirante aspirante = buscarPorId(id);
         return aspiranteMapper.toResponse(aspirante);
     }
 
     @Override
     public AspiranteResponseDTO obtenerPorEmail(String email) {
         Aspirante aspirante = aspiranteRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Aspirante no encontrado con email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("Aspirante no encontrado con email: " + email));
         return aspiranteMapper.toResponse(aspirante);
     }
 
     @Override
     public AspiranteResponseDTO obtenerPorCodigo(String codigo) {
-        Aspirante aspirante = aspiranteRepository.findByCodigo(codigo)
-                .orElseThrow(() -> new RuntimeException("Aspirante no encontrado con código: " + codigo));
+        Aspirante aspirante = buscarPorCodigo(codigo);
         return aspiranteMapper.toResponse(aspirante);
     }
 
@@ -216,40 +265,170 @@ public class AspiranteServiceImpl implements IAspiranteService {
     }
 
     @Override
-    public AspiranteResponseDTO aprobarAspirante(String id) {
-        return cambiarEstado(id, EstadoAspirante.APROBADO);
+    public AspiranteResponseDTO aprobarAspirante(String id, String responsable) {
+        Aspirante aspirante = buscarPorId(id);
+        validarTransicionDesdeRevision(aspirante.getEstado());
+
+        aspirante.setEstado(EstadoAspirante.ENVIO_CREDENCIALES);
+        registrarDecision(aspirante, null, responsable);
+        Aspirante guardado = aspiranteRepository.save(aspirante);
+
+        enviarCorreoSeguro(aspirante.getEmail(),
+                "Tu solicitud fue aprobada - PhotoBogota",
+                construirHtmlAprobado(aspirante.getNombres(), aspirante.getApellidos(), aspirante.getCodigo()));
+
+        log.info("Aspirante {} aprobado por {}. Queda en espera de envío de credenciales", id, responsable);
+        return aspiranteMapper.toResponse(guardado);
     }
 
     @Override
-    public AspiranteResponseDTO rechazarAspirante(String id) {
-        return cambiarEstado(id, EstadoAspirante.RECHAZADO);
+    public AspiranteResponseDTO rechazarAspirante(String id, String motivo, String responsable) {
+        Aspirante aspirante = buscarPorId(id);
+        validarTransicionDesdeRevision(aspirante.getEstado());
+
+        aspirante.setEstado(EstadoAspirante.RECHAZADO);
+        registrarDecision(aspirante, motivo, responsable);
+        Aspirante guardado = aspiranteRepository.save(aspirante);
+
+        enviarCorreoSeguro(aspirante.getEmail(),
+                "Tu solicitud fue rechazada - PhotoBogota",
+                construirHtmlRechazo(aspirante.getNombres(), aspirante.getApellidos(), aspirante.getCodigo(), motivo));
+
+        log.info("Aspirante {} rechazado por {}. Motivo: {}", id, responsable, motivo);
+        return aspiranteMapper.toResponse(guardado);
+    }
+
+    @Override
+    public AspiranteResponseDTO solicitarCorreccion(String id, String motivo, String responsable) {
+        Aspirante aspirante = buscarPorId(id);
+        validarTransicionDesdeRevision(aspirante.getEstado());
+
+        aspirante.setEstado(EstadoAspirante.EN_CORRECCION);
+        registrarDecision(aspirante, motivo, responsable);
+        Aspirante guardado = aspiranteRepository.save(aspirante);
+
+        enviarCorreoSeguro(aspirante.getEmail(),
+                "Tu solicitud necesita correcciones - PhotoBogota",
+                construirHtmlCorreccion(aspirante.getNombres(), aspirante.getApellidos(), aspirante.getCodigo(), motivo));
+
+        log.info("Aspirante {} devuelto para corrección por {}. Motivo: {}", id, responsable, motivo);
+        return aspiranteMapper.toResponse(guardado);
+    }
+
+    @Override
+    public AspiranteResponseDTO reenviarDocumentos(String codigo, ReenvioDocumentosDTO request) {
+        Aspirante aspirante = buscarPorCodigo(codigo);
+
+        if (aspirante.getEstado() != EstadoAspirante.EN_CORRECCION) {
+            throw new OperacionInvalidaException(
+                    "Solo puedes reenviar documentos si tu solicitud está en estado de corrección");
+        }
+
+        aspirante.setRutaArchivo(request.getRutaArchivo());
+        if (request.getTipoArchivo() != null) {
+            aspirante.setTipoArchivo(request.getTipoArchivo());
+        }
+        aspirante.setEstado(EstadoAspirante.PENDIENTE);
+        aspirante.setFechaReenvio(LocalDateTime.now());
+        aspirante.setVecesCorregida(
+                (aspirante.getVecesCorregida() == null ? 0 : aspirante.getVecesCorregida()) + 1);
+
+        Aspirante guardado = aspiranteRepository.save(aspirante);
+
+        enviarCorreoSeguro(aspirante.getEmail(),
+                "Recibimos tus documentos - PhotoBogota",
+                construirHtmlReenvioConfirmado(aspirante.getNombres(), aspirante.getApellidos(), aspirante.getCodigo()));
+
+        log.info("Aspirante con código {} reenvió documentos, vuelve a PENDIENTE", codigo);
+        return aspiranteMapper.toResponse(guardado);
+    }
+
+    @Override
+    public AspiranteResponseDTO agregarComentarioInterno(String id, String texto, String autor) {
+        Aspirante aspirante = buscarPorId(id);
+
+        Aspirante.ComentarioInterno comentario = Aspirante.ComentarioInterno.builder()
+                .autor(autor)
+                .texto(texto)
+                .fecha(LocalDateTime.now())
+                .build();
+
+        aspirante.getComentariosInternos().add(comentario);
+        Aspirante guardado = aspiranteRepository.save(aspirante);
+
+        log.info("Comentario interno agregado a aspirante {} por {}", id, autor);
+        return aspiranteMapper.toResponse(guardado);
+    }
+
+    @Override
+    public EstadisticasAspiranteDTO obtenerEstadisticas() {
+        List<Aspirante> todos = aspiranteRepository.findAll();
+
+        long pendientes = todos.stream().filter(a -> a.getEstado() == EstadoAspirante.PENDIENTE).count();
+        long enCorreccion = todos.stream().filter(a -> a.getEstado() == EstadoAspirante.EN_CORRECCION).count();
+        long enEnvioCredenciales = todos.stream().filter(a -> a.getEstado() == EstadoAspirante.ENVIO_CREDENCIALES).count();
+        long aprobadas = todos.stream().filter(a -> a.getEstado() == EstadoAspirante.APROBADO).count();
+        long rechazadas = todos.stream().filter(a -> a.getEstado() == EstadoAspirante.RECHAZADO).count();
+
+        return EstadisticasAspiranteDTO.builder()
+                .total(todos.size())
+                .pendientes(pendientes)
+                .enCorreccion(enCorreccion)
+                .enEnvioCredenciales(enEnvioCredenciales)
+                .aprobadas(aprobadas)
+                .rechazadas(rechazadas)
+                .procesadas(aprobadas + rechazadas + enEnvioCredenciales)
+                .build();
     }
 
     @Override
     public AspiranteResponseDTO actualizarEstado(String id, EstadoAspirante estado) {
-        return cambiarEstado(id, estado);
-    }
+        Aspirante aspirante = buscarPorId(id);
 
-    private AspiranteResponseDTO cambiarEstado(String id, EstadoAspirante nuevoEstado) {
-        Aspirante aspirante = aspiranteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Aspirante no encontrado con id: " + id));
-        
-        validarTransicionEstado(aspirante.getEstado(), nuevoEstado);
-        
-        aspirante.setEstado(nuevoEstado);
-        
-        log.info("Aspirante {} cambió a estado {}", id, nuevoEstado);
-        
+        if (aspirante.getEstado() == estado) {
+            throw new OperacionInvalidaException("El aspirante ya se encuentra en estado: " + estado);
+        }
+
+        aspirante.setEstado(estado);
+        log.info("Estado del aspirante {} actualizado manualmente a {}", id, estado);
+
         return aspiranteMapper.toResponse(aspiranteRepository.save(aspirante));
     }
 
-    private void validarTransicionEstado(EstadoAspirante estadoActual, EstadoAspirante nuevoEstado) {
-        if (estadoActual == nuevoEstado) {
-            throw new RuntimeException("El aspirante ya se encuentra en estado: " + nuevoEstado);
-        }
+    // --- Utilidades privadas ---
 
-        if (estadoActual == EstadoAspirante.APROBADO || estadoActual == EstadoAspirante.RECHAZADO) {
-            throw new RuntimeException("No se puede cambiar el estado de un aspirante ya procesado (APROBADO/RECHAZADO)");
+    private Aspirante buscarPorId(String id) {
+        return aspiranteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Aspirante no encontrado con id: " + id));
+    }
+
+    private Aspirante buscarPorCodigo(String codigo) {
+        return aspiranteRepository.findByCodigo(codigo)
+                .orElseThrow(() -> new ResourceNotFoundException("Aspirante no encontrado con código: " + codigo));
+    }
+
+    private void registrarDecision(Aspirante aspirante, String motivo, String responsable) {
+        aspirante.setMotivoDecision(motivo);
+        aspirante.setDecididoPor(responsable);
+        aspirante.setFechaDecision(LocalDateTime.now());
+    }
+
+    // Solo se puede aprobar, rechazar o pedir corrección mientras la solicitud
+    // está en revisión (PENDIENTE o EN_CORRECCION). Una vez pasa a un estado
+    // terminal (APROBADO, RECHAZADO, ENVIO_CREDENCIALES) ya no se puede
+    // reprocesar por esta vía; para eso existe actualizarEstado (solo ADMIN).
+    private void validarTransicionDesdeRevision(EstadoAspirante estadoActual) {
+        if (estadoActual != EstadoAspirante.PENDIENTE && estadoActual != EstadoAspirante.EN_CORRECCION) {
+            throw new OperacionInvalidaException(
+                    "No se puede procesar una solicitud que ya fue decidida (estado actual: " + estadoActual + ")");
+        }
+    }
+
+    private void enviarCorreoSeguro(String destinatario, String asunto, String html) {
+        try {
+            emailService.enviarCorreoHtml(destinatario, asunto, html);
+        } catch (Exception e) {
+            log.error("Error al enviar correo a {}: {}", destinatario, e.getMessage());
         }
     }
 }

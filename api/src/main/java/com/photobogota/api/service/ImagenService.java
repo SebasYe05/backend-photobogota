@@ -30,6 +30,10 @@ public class ImagenService {
         return guardarArchivo(file, "reportes");
     }
 
+    public String subirDocumentoAspirante(MultipartFile file) throws IOException {
+        return guardarArchivo(file, "aspirantes");
+    }
+
     private String guardarArchivo(MultipartFile file, String subcarpeta) throws IOException {
         // Ruta absoluta basada en el directorio de ejecución del proyecto
         Path carpeta = Paths.get(System.getProperty("user.dir"), uploadDir, subcarpeta);

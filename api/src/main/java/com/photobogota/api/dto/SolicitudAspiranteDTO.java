@@ -57,6 +57,7 @@ public class SolicitudAspiranteDTO {
     @Schema(description = "Localidad del aspirante", example = "Kennedy, Chapinero, etc.")
     private String localidad;
 
+    @NotBlank(message = "Debes adjuntar el documento requerido (RUT/cédula)")
     @Schema(description = "Ruta del archivo de la cédula del aspirante", example = "/uploads/cedula_juan_romero.pdf")
     private String rutaArchivo;
 

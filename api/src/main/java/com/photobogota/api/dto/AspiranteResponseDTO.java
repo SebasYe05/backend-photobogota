@@ -1,6 +1,8 @@
 package com.photobogota.api.dto;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import com.photobogota.api.model.EstadoAspirante;
 
@@ -67,4 +69,22 @@ public class AspiranteResponseDTO {
 
     @Schema(description = "Código del aspirante", example = "ASPIRANTE001")
     private String codigo;
+
+    @Schema(description = "Justificación del rechazo o de la corrección solicitada")
+    private String motivoDecision;
+
+    @Schema(description = "Moderador/administrador que tomó la última decisión")
+    private String decididoPor;
+
+    @Schema(description = "Fecha y hora de la última decisión")
+    private LocalDateTime fechaDecision;
+
+    @Schema(description = "Fecha y hora en la que el aspirante reenvió sus documentos tras una corrección")
+    private LocalDateTime fechaReenvio;
+
+    @Schema(description = "Cantidad de veces que la solicitud ha sido corregida y reenviada")
+    private Integer vecesCorregida;
+
+    @Schema(description = "Comentarios internos entre moderadores, no visibles para el aspirante")
+    private List<ComentarioInternoDTO> comentariosInternos;
 }
