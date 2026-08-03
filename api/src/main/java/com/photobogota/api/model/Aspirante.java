@@ -56,6 +56,17 @@ public class Aspirante {
     @Builder.Default
     private Integer vecesCorregida = 0;
 
+    // Fecha en la que se enviaron las credenciales (cuenta creada) al aspirante.
+    private LocalDateTime fechaEnvioCredenciales;
+
+    // ID (ObjectId como String) del Usuario/UsuarioAuth creado para este
+    // aspirante al enviarle las credenciales. Sirve como bandera de
+    // idempotencia: si ya tiene valor, no se debe volver a crear la cuenta.
+    private String usuarioCreadoId;
+
+    // Nombre de usuario generado para su cuenta de socio.
+    private String nombreUsuarioGenerado;
+
     // Bitácora de comentarios internos entre moderadores/administradores,
     // no visibles para el aspirante. Sirve para coordinar la revisión.
     @Builder.Default

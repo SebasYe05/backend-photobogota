@@ -188,6 +188,21 @@ public class AspiranteController {
                 aspiranteService.agregarComentarioInterno(id, request.getTexto(), userDetails.getUsername()));
     }
 
+    @Operation(summary = "Enviar credenciales y crear cuenta de socio", description = "Crea automáticamente la cuenta de usuario con rol SOCIO para el aspirante aprobado y le envía sus credenciales por correo. Requiere rol MOD o ADMIN.", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cuenta creada y credenciales enviadas"),
+            @ApiResponse(responseCode = "400", description = "La solicitud no está en espera de envío de credenciales o ya se enviaron"),
+            @ApiResponse(responseCode = "404", description = "Solicitud no encontrada"),
+            @ApiResponse(responseCode = "403", description = "Sin permisos suficientes")
+    })
+    @PutMapping("/{id}/enviar-credenciales")
+    @PreAuthorize("hasAnyRole('MOD', 'ADMIN')")
+    public ResponseEntity<AspiranteResponseDTO> enviarCredenciales(
+            @Parameter(description = "ID de la solicitud", required = true) @PathVariable String id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(aspiranteService.enviarCredenciales(id, userDetails.getUsername()));
+    }
+
     @Operation(summary = "Actualizar estado manualmente", description = "Permite cambiar el estado de una solicitud a cualquier valor, sin pasar por las reglas de negocio. Requiere rol ADMIN.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estado actualizado"),

@@ -87,4 +87,10 @@ public class AspiranteResponseDTO {
 
     @Schema(description = "Comentarios internos entre moderadores, no visibles para el aspirante")
     private List<ComentarioInternoDTO> comentariosInternos;
+
+    @Schema(description = "Fecha y hora en la que se enviaron las credenciales de acceso (cuenta creada)")
+    private LocalDateTime fechaEnvioCredenciales;
+
+    @Schema(description = "Nombre de usuario generado para la cuenta de socio, si ya se enviaron las credenciales")
+    private String nombreUsuarioGenerado;
 }

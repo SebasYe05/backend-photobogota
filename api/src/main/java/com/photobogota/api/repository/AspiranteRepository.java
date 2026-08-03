@@ -8,11 +8,13 @@ import java.util.Optional;
 
 public interface AspiranteRepository extends MongoRepository<Aspirante, String> {
 
-    Optional<Aspirante> findByEmail(String email);
+    // Nota: ya no asumimos un único documento por email/nit, porque un
+    // aspirante rechazado puede volver a aplicar pasados 90 días y eso crea
+    // un nuevo documento histórico. Por eso estas consultas retornan listas
+    // ordenadas por fecha, y el servicio decide con cuál trabajar.
+    List<Aspirante> findByEmailOrderByFechaSolicitudDesc(String email);
 
-    Optional<Aspirante> findByNit(String nit);
-
-    Optional<Aspirante> findByEmailOrNit(String email, String nit);
+    List<Aspirante> findByNitOrderByFechaSolicitudDesc(String nit);
 
     Optional<Aspirante> findByCodigo(String codigo);
 

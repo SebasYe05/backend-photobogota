@@ -36,6 +36,8 @@ public class AspiranteMapper {
                 .fechaReenvio(aspirante.getFechaReenvio())
                 .vecesCorregida(aspirante.getVecesCorregida())
                 .comentariosInternos(mapearComentarios(aspirante))
+                .fechaEnvioCredenciales(aspirante.getFechaEnvioCredenciales())
+                .nombreUsuarioGenerado(aspirante.getNombreUsuarioGenerado())
                 .build();
     }
 

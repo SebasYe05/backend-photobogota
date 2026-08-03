@@ -223,6 +223,21 @@ public class NotificacionServiceImpl implements INotificacionService {
                 spot.getId(), usuarioQueResenio);
     }
 
+    @Override
+    public void notificarSistema(String destinatarioUsername, String titulo, String mensaje) {
+        Notificacion notificacion = Notificacion.builder()
+                .destinatarioUsername(destinatarioUsername)
+                .tipo(NotificacionTipo.SISTEMA)
+                .titulo(titulo)
+                .mensaje(mensaje)
+                .emisorUsername("sistema")
+                .leida(false)
+                .fechaCreacion(LocalDateTime.now())
+                .build();
+
+        notificacionRepository.save(notificacion);
+    }
+
     // ==================== NÚCLEO COMÚN: crear + enviar respetando preferencias
     // ====================
 

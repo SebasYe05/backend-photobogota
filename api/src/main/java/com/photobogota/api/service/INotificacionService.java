@@ -37,4 +37,11 @@ public interface INotificacionService {
     void notificarNuevoSpot(Spot spot);
 
     void notificarNuevaResena(Spot spot, Spot.Resena resena, String usuarioQueResenio);
+
+    // Notificación de sistema puntual para un usuario ya identificado por su
+    // nombreUsuario (ej: aprobación de membresía, envío de credenciales).
+    // A diferencia de notificarNuevoSpot/notificarNuevaResena, esta no
+    // respeta preferencias de silencio: es información crítica de la cuenta,
+    // no un aviso discrecional.
+    void notificarSistema(String destinatarioUsername, String titulo, String mensaje);
 }

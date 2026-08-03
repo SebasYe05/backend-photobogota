@@ -24,6 +24,8 @@ public interface IAspiranteService {
 
     AspiranteResponseDTO aprobarAspirante(String id, String responsable);
 
+    AspiranteResponseDTO enviarCredenciales(String id, String responsable);
+
     AspiranteResponseDTO rechazarAspirante(String id, String motivo, String responsable);
 
     AspiranteResponseDTO solicitarCorreccion(String id, String motivo, String responsable);
