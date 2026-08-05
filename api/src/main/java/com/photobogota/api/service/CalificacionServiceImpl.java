@@ -23,13 +23,13 @@ public class CalificacionServiceImpl implements ICalificacionService {
 
     private final CalificacionRepository calificacionRepository;
     private final SpotRepository spotRepository;
+    private final INotificacionService notificacionService;
 
     @Override
     @Transactional
     public CalificacionResponseDTO crearCalificacion(String spotId, CalificacionRequestDTO request, String usuario) {
-        if (!spotRepository.existsById(spotId)) {
-            throw new ResourceNotFoundException("Spot no encontrado con id: " + spotId);
-        }
+        Spot spot = spotRepository.findById(spotId)
+                .orElseThrow(() -> new ResourceNotFoundException("Spot no encontrado con id: " + spotId));
 
         if (calificacionRepository.findBySpotIdAndUsuario(spotId, usuario) != null) {
             throw new ResourceAlreadyExistsException("calificacion para este spot", usuario);
@@ -45,6 +45,12 @@ public class CalificacionServiceImpl implements ICalificacionService {
         log.info("Calificacion creada para spot {} por usuario {}", spotId, usuario);
 
         recalcularRatingSpot(spotId);
+
+        try {
+            notificacionService.notificarNuevaCalificacion(spot, calificacion, usuario);
+        } catch (Exception e) {
+            log.error("No se pudo notificar la nueva calificación en el spot {}: {}", spotId, e.getMessage());
+        }
 
         return CalificacionResponseDTO.from(calificacion);
     }
