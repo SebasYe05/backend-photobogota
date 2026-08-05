@@ -23,5 +23,6 @@ public class Guardado {
 
     private String spotId;
 
+    @Builder.Default
     private LocalDateTime guardadoEn = LocalDateTime.now();
 }

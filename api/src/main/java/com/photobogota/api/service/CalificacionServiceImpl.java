@@ -27,8 +27,9 @@ public class CalificacionServiceImpl implements ICalificacionService {
     @Override
     @Transactional
     public CalificacionResponseDTO crearCalificacion(String spotId, CalificacionRequestDTO request, String usuario) {
-        Spot spot = spotRepository.findById(spotId)
-                .orElseThrow(() -> new ResourceNotFoundException("Spot no encontrado con id: " + spotId));
+        if (!spotRepository.existsById(spotId)) {
+            throw new ResourceNotFoundException("Spot no encontrado con id: " + spotId);
+        }
 
         if (calificacionRepository.findBySpotIdAndUsuario(spotId, usuario) != null) {
             throw new ResourceAlreadyExistsException("calificacion para este spot", usuario);
@@ -95,7 +96,7 @@ public class CalificacionServiceImpl implements ICalificacionService {
         List<Calificacion> calificaciones = calificacionRepository.findBySpotId(spotId);
 
         double promedio = calificaciones.stream()
-                .mapToInt(Calificacion::getEstrellas)
+                .mapToInt(calificacion -> calificacion.getEstrellas())
                 .average()
                 .orElse(0.0);
 

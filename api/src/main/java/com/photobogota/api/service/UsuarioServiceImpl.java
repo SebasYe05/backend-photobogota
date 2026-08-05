@@ -153,7 +153,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
 
         // Batch-fetch de los spots padre para poblar tituloSpot (contrato del front)
         List<String> spotIds = calificaciones.stream()
-                .map(Calificacion::getSpotId)
+                .map(calificacion -> calificacion.getSpotId())
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
@@ -176,7 +176,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
         }
 
         List<String> spotIds = guardados.stream()
-                .map(Guardado::getSpotId)
+                .map(guardado -> guardado.getSpotId())
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());

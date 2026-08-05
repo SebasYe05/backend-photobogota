@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EliminacionCuentaServiceImpl implements IEliminacionCuentaService {
 
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter
-            .ofPattern("d 'de' MMMM 'de' yyyy", new Locale("es", "ES"));
+            .ofPattern("d 'de' MMMM 'de' yyyy", Locale.forLanguageTag("es-ES"));
 
     private static final List<EstadoSolicitudEliminacion> ESTADOS_ACTIVOS = List.of(
             EstadoSolicitudEliminacion.PENDIENTE_VERIFICACION,

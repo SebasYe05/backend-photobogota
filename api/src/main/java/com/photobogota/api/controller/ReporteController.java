@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -155,8 +154,8 @@ public class ReporteController {
     // negocio (ownership, visibilidad del dashboard, quién puede escalar).
     private Rol obtenerRol(UserDetails userDetails) {
         boolean esAdmin = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(a -> a.equals("ROLE_ADMIN"));
+                .map(authority -> authority.getAuthority())
+                .anyMatch("ROLE_ADMIN"::equals);
         return esAdmin ? Rol.ADMIN : Rol.MOD;
     }
 }

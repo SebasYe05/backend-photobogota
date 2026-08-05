@@ -242,7 +242,7 @@ public class AdminEliminacionCuentaServiceImpl implements IAdminEliminacionCuent
 
     private DependenciasEliminacionDTO calcularDependencias(ObjectId usuarioId, String nombreUsuario) {
         List<Spot> spots = spotRepository.findByCreadorUsername(nombreUsuario);
-        List<String> spotIds = spots.stream().map(Spot::getId).toList();
+        List<String> spotIds = spots.stream().map(spot -> spot.getId()).toList();
 
         int reportesComoAutor = reporteRepository
                 .findByReportadoPorAndEstadoIn(nombreUsuario, ESTADOS_REPORTE_PENDIENTES).size();
@@ -277,7 +277,7 @@ public class AdminEliminacionCuentaServiceImpl implements IAdminEliminacionCuent
         String sufijo = solicitud.getUsuarioId().toHexString();
 
         List<Spot> spots = spotRepository.findByCreadorUsername(nombreUsuario);
-        List<String> spotIds = spots.stream().map(Spot::getId).toList();
+        List<String> spotIds = spots.stream().map(spot -> spot.getId()).toList();
 
         Set<Reporte> reportesPendientes = new LinkedHashSet<>();
         reportesPendientes.addAll(

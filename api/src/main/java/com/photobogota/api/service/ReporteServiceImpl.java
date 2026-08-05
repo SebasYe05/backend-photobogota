@@ -148,22 +148,22 @@ public class ReporteServiceImpl implements IReporteService {
         // moderador escaló (escalar() cambia asignadoA a ADMIN). NO ve
         // la cola de MOD que todavía no fue escalada.
         // MOD solo ve su propia cola (lo que sigue asignado a MOD).
-        query.addCriteria(Criteria.where("asignadoA").is(rolUsuario));
+        query.addCriteria(Criteria.where(Reporte.Fields.asignadoA).is(rolUsuario));
 
         if (estado != null) {
-            query.addCriteria(Criteria.where("estado").is(estado));
+            query.addCriteria(Criteria.where(Reporte.Fields.estado).is(estado));
         }
         if (gravedad != null) {
-            query.addCriteria(Criteria.where("gravedad").is(gravedad));
+            query.addCriteria(Criteria.where(Reporte.Fields.gravedad).is(gravedad));
         }
         if (categoria != null) {
-            query.addCriteria(Criteria.where("categoria").is(categoria));
+            query.addCriteria(Criteria.where(Reporte.Fields.categoria).is(categoria));
         }
         if (tipoObjetivo != null) {
-            query.addCriteria(Criteria.where("tipoObjetivo").is(tipoObjetivo));
+            query.addCriteria(Criteria.where(Reporte.Fields.tipoObjetivo).is(tipoObjetivo));
         }
         if (escalado != null) {
-            query.addCriteria(Criteria.where("escalado").is(escalado));
+            query.addCriteria(Criteria.where(Reporte.Fields.escalado).is(escalado));
         }
 
         List<Reporte> reportes = mongoTemplate.find(query, Reporte.class);
@@ -177,7 +177,8 @@ public class ReporteServiceImpl implements IReporteService {
     }
 
     @Override
-    public ReporteResponseDTO cambiarEstado(String id, CambiarEstadoRequestDTO request, String usuario, Rol rolUsuario) {
+    public ReporteResponseDTO cambiarEstado(String id, CambiarEstadoRequestDTO request, String usuario,
+            Rol rolUsuario) {
         Reporte reporte = reporteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reporte no encontrado con id: " + id));
 
@@ -203,7 +204,8 @@ public class ReporteServiceImpl implements IReporteService {
     }
 
     @Override
-    public ReporteResponseDTO escalarReporte(String id, EscalarReporteRequestDTO request, String usuario, Rol rolUsuario) {
+    public ReporteResponseDTO escalarReporte(String id, EscalarReporteRequestDTO request, String usuario,
+            Rol rolUsuario) {
         Reporte reporte = reporteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reporte no encontrado con id: " + id));
 
@@ -241,12 +243,12 @@ public class ReporteServiceImpl implements IReporteService {
     private Comparator<Reporte> construirComparador(String orden) {
         String valor = orden == null ? "recientes" : orden.toLowerCase();
         return switch (valor) {
-            case "antiguos" -> Comparator.comparing(Reporte::getFechaCreacion);
+            case "antiguos" -> Comparator.comparing((Reporte reporte) -> reporte.getFechaCreacion());
             case "prioridad" -> Comparator
                     .comparing((Reporte r) -> pesoGravedad(r.getGravedad()))
                     .reversed()
-                    .thenComparing(Reporte::getFechaCreacion);
-            default -> Comparator.comparing(Reporte::getFechaCreacion).reversed();
+                    .thenComparing((Reporte reporte) -> reporte.getFechaCreacion());
+            default -> Comparator.comparing((Reporte reporte) -> reporte.getFechaCreacion()).reversed();
         };
     }
 
@@ -309,7 +311,8 @@ public class ReporteServiceImpl implements IReporteService {
         };
     }
 
-    // Genera un ticket tipo "REP-482913" verificando unicidad contra la base de datos
+    // Genera un ticket tipo "REP-482913" verificando unicidad contra la base de
+    // datos
     private String generarNumeroTicketUnico() {
         String numeroTicket;
         do {
