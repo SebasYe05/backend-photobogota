@@ -422,19 +422,19 @@ public class FiltroContenidoServiceImpl implements IFiltroContenidoService {
 
         Query query = new Query();
         if (accion != null) {
-            query.addCriteria(Criteria.where("accion").is(accion));
+            query.addCriteria(Criteria.where(RegistroModeracion.Fields.accion).is(null));
         }
         if (nombreUsuario != null && !nombreUsuario.isBlank()) {
-            query.addCriteria(Criteria.where("nombreUsuario").regex(Pattern.quote(nombreUsuario), "i"));
+            query.addCriteria(Criteria.where(RegistroModeracion.Fields.nombreUsuario).regex(Pattern.quote(nombreUsuario), "i"));
         }
         if (tipoContenido != null) {
-            query.addCriteria(Criteria.where("tipoContenido").is(tipoContenido));
+            query.addCriteria(Criteria.where(RegistroModeracion.Fields.tipoContenido).is(tipoContenido));
         }
         if (desde != null) {
-            query.addCriteria(Criteria.where("fecha").gte(desde));
+            query.addCriteria(Criteria.where(RegistroModeracion.Fields.fecha).gte(desde));
         }
         if (hasta != null) {
-            query.addCriteria(Criteria.where("fecha").lte(hasta));
+            query.addCriteria(Criteria.where(RegistroModeracion.Fields.fecha).lte(hasta));
         }
 
         long total = mongoTemplate.count(query, RegistroModeracion.class);
