@@ -1,7 +1,7 @@
 package com.photobogota.api.storage;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,7 +14,7 @@ import java.util.UUID;
  * Cloudinary no está configurado (no existe la propiedad cloudinary.url).
  */
 @Service
-@ConditionalOnProperty(name = "cloudinary.url", matchIfMissing = true)
+@ConditionalOnExpression("'${cloudinary.url:}' == ''")
 public class LocalStorageService implements StorageService {
 
     @Value("${storage.local.ruta:/uploads}")

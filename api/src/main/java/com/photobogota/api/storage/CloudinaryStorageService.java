@@ -3,7 +3,7 @@ package com.photobogota.api.storage;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,7 +17,7 @@ import java.util.Map;
  * URL devuelta: https://res.cloudinary.com/<cloud_name>/<tipo>/upload/v<version>/<public_id>.<ext>
  */
 @Service
-@ConditionalOnProperty(name = "cloudinary.url")
+@ConditionalOnExpression("'${cloudinary.url:}' != ''")
 public class CloudinaryStorageService implements StorageService {
 
     private final Cloudinary cloudinary;
