@@ -4,6 +4,7 @@ import com.photobogota.api.dto.*;
 import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.mapper.SpotMapper;
 import com.photobogota.api.model.Spot;
+import com.photobogota.api.model.TipoContenidoModerado;
 import com.photobogota.api.repository.SpotRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class SpotService {
     private final SpotMapper spotMapper;
     private final UsuarioAuthRepository usuarioAuthRepository;
     private final INotificacionService notificacionService;
+    private final IFiltroContenidoService filtroContenidoService;
 
     public List<SpotResumenDTO> obtenerTodos(String categoria, String localidad) {
         List<Spot> spots;
@@ -68,6 +70,11 @@ public class SpotService {
 
     @Transactional
     public SpotResponseDTO crearSpot(CrearSpotRequestDTO request, String creadorUsername, String rol) {
+        filtroContenidoService.validarContenido(creadorUsername, TipoContenidoModerado.SPOT_NOMBRE,
+                request.getNombre());
+        filtroContenidoService.validarContenido(creadorUsername, TipoContenidoModerado.SPOT_DESCRIPCION,
+                request.getDescripcion());
+
         Spot spot = new Spot();
         spot.setNombre(request.getNombre());
         spot.setLatitud(request.getLatitud());
@@ -107,6 +114,8 @@ public class SpotService {
     public SpotResponseDTO agregarResena(String spotId, ResenaRequestDTO request, String usuario) {
         Spot spot = spotRepository.findById(spotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Spot no encontrado con id: " + spotId));
+
+        filtroContenidoService.validarContenido(usuario, TipoContenidoModerado.RESENA, request.getComentario());
 
         Spot.Resena resena = new Spot.Resena();
         resena.setId(UUID.randomUUID().toString());

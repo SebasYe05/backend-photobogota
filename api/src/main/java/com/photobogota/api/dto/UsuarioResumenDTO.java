@@ -31,4 +31,7 @@ public class UsuarioResumenDTO {
 
     @Schema(description = "Número de teléfono del usuario", example = "3201234567")
     private String telefono;
+
+    @Schema(description = "Sanción activa del usuario (null si no tiene)")
+    private SancionDTO sancion;
 }

@@ -1,7 +1,7 @@
 package com.photobogota.api.storage;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -9,8 +9,12 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.UUID;
 
+/**
+ * Almacenamiento local (disco). Es el respaldo por defecto: se usa solo cuando
+ * Cloudinary no está configurado (no existe la propiedad cloudinary.url).
+ */
 @Service
-@Profile("local") // activar solo cuando spring.profiles.active=local
+@ConditionalOnProperty(name = "cloudinary.url", matchIfMissing = true)
 public class LocalStorageService implements StorageService {
 
     @Value("${storage.local.ruta:/uploads}")

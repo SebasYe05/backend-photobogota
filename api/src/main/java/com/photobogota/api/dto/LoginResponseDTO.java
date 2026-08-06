@@ -48,4 +48,7 @@ public class LoginResponseDTO {
 
     @Schema(description = "Estado de la cuenta del usuario", example = "true")
     private Boolean estadoCuenta;
+
+    @Schema(description = "Sanción activa del usuario (null si no tiene)")
+    private SancionDTO sancion;
 }

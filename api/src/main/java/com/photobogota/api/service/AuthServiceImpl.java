@@ -57,6 +57,7 @@ public class AuthServiceImpl implements IAuthService {
     private final CodigoRecuperacionRepository codigoRecuperacionRepository;
     private final IEmailService emailService;
     private final SesionRepository sesionRepository;
+    private final IFiltroContenidoService filtroContenidoService;
 
     @Override
     @Transactional
@@ -182,6 +183,7 @@ public class AuthServiceImpl implements IAuthService {
                  .biografia(perfilUsuario.getBiografia())
                  .fotoPerfil(perfilUsuario.getFotoPerfil())
                  .estadoCuenta(perfilUsuario.getEstadoCuenta())
+                 .sancion(filtroContenidoService.obtenerSancionActual(usuario.getNombreUsuario()))
                  .build();
     }
 
@@ -249,6 +251,7 @@ public class AuthServiceImpl implements IAuthService {
                  .biografia(perfilUsuario.getBiografia())
                  .fotoPerfil(perfilUsuario.getFotoPerfil())
                  .estadoCuenta(perfilUsuario.getEstadoCuenta())
+                 .sancion(filtroContenidoService.obtenerSancionActual(usuario.getNombreUsuario()))
                  .build();
     }
 
@@ -316,6 +319,7 @@ public class AuthServiceImpl implements IAuthService {
                 .fotoPerfil(perfilUsuario.getFotoPerfil())
                 .rol(usuarioAuth.getRol().name())
                 .nivel(nivel)
+                .sancion(filtroContenidoService.obtenerSancionActual(usuarioAuth.getNombreUsuario()))
                 .build();
     }
 

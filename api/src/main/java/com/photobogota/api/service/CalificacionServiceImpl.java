@@ -6,6 +6,7 @@ import com.photobogota.api.exception.ResourceAlreadyExistsException;
 import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.model.Calificacion;
 import com.photobogota.api.model.Spot;
+import com.photobogota.api.model.TipoContenidoModerado;
 import com.photobogota.api.repository.CalificacionRepository;
 import com.photobogota.api.repository.SpotRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class CalificacionServiceImpl implements ICalificacionService {
     private final CalificacionRepository calificacionRepository;
     private final SpotRepository spotRepository;
     private final INotificacionService notificacionService;
+    private final IFiltroContenidoService filtroContenidoService;
 
     @Override
     @Transactional
@@ -34,6 +36,8 @@ public class CalificacionServiceImpl implements ICalificacionService {
         if (calificacionRepository.findBySpotIdAndUsuario(spotId, usuario) != null) {
             throw new ResourceAlreadyExistsException("calificacion para este spot", usuario);
         }
+
+        filtroContenidoService.validarContenido(usuario, TipoContenidoModerado.RESENA, request.getComentario());
 
         Calificacion calificacion = new Calificacion();
         calificacion.setSpotId(spotId);
@@ -68,6 +72,8 @@ public class CalificacionServiceImpl implements ICalificacionService {
         if (!calificacion.getUsuario().equals(usuario)) {
             throw new ResourceNotFoundException("No tienes permiso para modificar esta calificacion");
         }
+
+        filtroContenidoService.validarContenido(usuario, TipoContenidoModerado.RESENA, request.getComentario());
 
         calificacion.setEstrellas(request.getEstrellas());
         calificacion.setComentario(request.getComentario());
