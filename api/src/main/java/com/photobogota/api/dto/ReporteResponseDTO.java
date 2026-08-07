@@ -52,13 +52,16 @@ public class ReporteResponseDTO {
     @Schema(description = "true si el spot reportado es un local creado por un SOCIO (no un spot de moderador/admin)")
     private Boolean esLocalDeSocio;
 
+    @Schema(description = "nombreUsuario del socio dueño del local reportado, si esLocalDeSocio = true")
+    private String propietarioSocio;
+
     @Schema(description = "ID de la reseña reportada, solo si tipoObjetivo = RESENA")
     private String resenaId;
 
     @Schema(description = "nombreUsuario del autor de la reseña reportada, solo si tipoObjetivo = RESENA")
     private String autorResenaReportada;
 
-    @Schema(description = "Rol al que fue asignado automaticamente el reporte (MOD o ADMIN)")
+    @Schema(description = "Rol al que está asignado actualmente el reporte (SOCIO, MOD o ADMIN)")
     private Rol asignadoA;
 
     @Schema(description = "Gravedad calculada automaticamente (BAJA, MEDIA, ALTA, CRITICA), usada para priorizar el dashboard")
@@ -75,6 +78,27 @@ public class ReporteResponseDTO {
 
     @Schema(description = "Motivo por el que se escalo el reporte, si aplica")
     private String motivoEscalado;
+
+    @Schema(description = "true si el ultimo escalamiento fue automatico por vencimiento de plazo (HU 15 pt 7)")
+    private Boolean escaladoAutomaticamente;
+
+    @Schema(description = "Historial completo de escalamientos del reporte (SOCIO -> MOD -> ADMIN)")
+    private List<EscalamientoDTO> historialEscalamiento;
+
+    @Schema(description = "nombreUsuario de quien marco el reporte como solucionado, si esta pendiente de validacion de un MOD")
+    private String resueltoPor;
+
+    @Schema(description = "nombreUsuario del MOD que valido (o rechazo) la solucion, si aplica")
+    private String validadoPor;
+
+    @Schema(description = "Fecha en que un MOD valido la solucion, si aplica")
+    private LocalDateTime fechaValidacion;
+
+    @Schema(description = "Fecha limite para que el socio responda (24h desde la creacion), solo si esta asignado a SOCIO")
+    private LocalDateTime fechaLimiteRespuesta;
+
+    @Schema(description = "Fecha limite para que el socio resuelva (5 dias desde la creacion), solo si esta asignado a SOCIO")
+    private LocalDateTime fechaLimiteResolucion;
 
     @Schema(description = "nombreUsuario de quien hizo el ultimo cambio de estado")
     private String actualizadoPor;
@@ -99,6 +123,20 @@ public class ReporteResponseDTO {
     public static class ObservacionDTO {
         private String autor;
         private String texto;
+        private LocalDateTime fecha;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Schema(description = "Un salto de nivel en la cadena de escalamiento SOCIO -> MOD -> ADMIN")
+    public static class EscalamientoDTO {
+        private Rol de;
+        private Rol a;
+        private String por;
+        private String motivo;
+        private Boolean automatico;
         private LocalDateTime fecha;
     }
 }

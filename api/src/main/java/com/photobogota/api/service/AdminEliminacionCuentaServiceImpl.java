@@ -58,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminEliminacionCuentaServiceImpl implements IAdminEliminacionCuentaService {
 
     private static final List<EstadoReporte> ESTADOS_REPORTE_PENDIENTES = List.of(
-            EstadoReporte.NUEVO, EstadoReporte.EN_REVISION);
+            EstadoReporte.NUEVO, EstadoReporte.EN_REVISION, EstadoReporte.PENDIENTE_VALIDACION);
 
     private final SolicitudEliminacionRepository solicitudEliminacionRepository;
     private final UsuarioAuthRepository usuarioAuthRepository;

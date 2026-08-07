@@ -17,6 +17,7 @@ import com.photobogota.api.model.CanalNotificacion;
 import com.photobogota.api.model.Notificacion;
 import com.photobogota.api.model.NotificacionTipo;
 import com.photobogota.api.model.PreferenciasNotificacion;
+import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.Spot;
 import com.photobogota.api.repository.NotificacionRepository;
 import com.photobogota.api.repository.PreferenciasNotificacionRepository;
@@ -248,6 +249,22 @@ public class NotificacionServiceImpl implements INotificacionService {
                 .build();
 
         notificacionRepository.save(notificacion);
+    }
+
+    @Override
+    public void notificarPorRol(Rol rol, String titulo, String mensaje, String emisorUsername) {
+        List<String> destinatarios = usuarioAuthRepository.findByRol(rol).stream()
+                .map(u -> u.getNombreUsuario())
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+        for (String destinatario : destinatarios) {
+            if (destinatario.equals(emisorUsername)) {
+                continue; // no notificarse a sí mismo
+            }
+            notificarSistema(destinatario, titulo, mensaje);
+        }
     }
 
     // ==================== NÚCLEO COMÚN: crear + enviar respetando preferencias

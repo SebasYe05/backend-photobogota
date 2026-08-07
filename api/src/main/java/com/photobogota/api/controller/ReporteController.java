@@ -20,6 +20,7 @@ import com.photobogota.api.dto.CambiarEstadoRequestDTO;
 import com.photobogota.api.dto.CrearReporteRequestDTO;
 import com.photobogota.api.dto.EscalarReporteRequestDTO;
 import com.photobogota.api.dto.ReporteResponseDTO;
+import com.photobogota.api.dto.ValidarReporteRequestDTO;
 import com.photobogota.api.model.CategoriaReporte;
 import com.photobogota.api.model.EstadoReporte;
 import com.photobogota.api.model.Gravedad;
@@ -40,12 +41,15 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping(ApiConstants.V1 + "/reportes")
 @RequiredArgsConstructor
-@Tag(name = "Reportes", description = "Sistema de reportes de la comunidad (Etapa 1: creación y asignación automática. Etapa 2: dashboard, escalamiento y cambio de estado)")
+@Tag(name = "Reportes", description = "Sistema de reportes de la comunidad. Etapa 1: creación y asignación automática (MOD/ADMIN/SOCIO). "
+        + "Etapa 2: dashboard, cambio de estado y escalamiento entre SOCIO, MOD y ADMIN, con validación de moderación.")
 public class ReporteController {
 
     private final IReporteService reporteService;
 
-    @Operation(summary = "Crear un reporte", description = "Crea un reporte, genera un número de ticket y lo asigna automáticamente a ADMIN o MOD según la categoría.", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Crear un reporte", description = "Crea un reporte, genera un número de ticket y lo asigna automáticamente. "
+            + "Si el reporte es sobre el local de un SOCIO, se asigna primero al SOCIO. "
+            + "Si es sobre cualquier otro spot, se asigna a MOD. El resto se asigna por categoría (error técnico a ADMIN).", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Reporte creado exitosamente"),
             @ApiResponse(responseCode = "400", description = "Datos inválidos"),
@@ -81,28 +85,37 @@ public class ReporteController {
         return ResponseEntity.ok(reporteService.obtenerPorId(id));
     }
 
-    @Operation(summary = "Listar reportes asignados a moderadores", description = "Cola de reportes de categoría ofensivo, spam, información incorrecta y problema con spot.", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Listar reportes asignados a moderadores", description = "Cola de reportes de categoría ofensivo, spam, información incorrecta y cualquier reporte sobre un spot (excepto locales de socio).", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/asignados/moderador")
     @PreAuthorize("hasAnyRole('MOD', 'ADMIN')")
     public ResponseEntity<List<ReporteResponseDTO>> listarAsignadosAModerador() {
-        return ResponseEntity.ok(reporteService.listarPorRolAsignado(Rol.MOD));
+        return ResponseEntity.ok(reporteService.listarPorRolAsignado(Rol.MOD, null));
     }
 
-    @Operation(summary = "Listar reportes asignados a administradores", description = "Cola de reportes de categoría error técnico (y los escalados por moderación).", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Listar reportes asignados a administradores", description = "Cola de reportes de categoría error técnico (sin spot asociado) y los escalados por moderación.", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/asignados/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ReporteResponseDTO>> listarAsignadosAAdmin() {
-        return ResponseEntity.ok(reporteService.listarPorRolAsignado(Rol.ADMIN));
+        return ResponseEntity.ok(reporteService.listarPorRolAsignado(Rol.ADMIN, null));
+    }
+
+    @Operation(summary = "Listar reportes asignados a mis locales (SOCIO)", description = "Cola de reportes sobre los locales del socio autenticado.", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/asignados/socio")
+    @PreAuthorize("hasRole('SOCIO')")
+    public ResponseEntity<List<ReporteResponseDTO>> listarAsignadosASocio(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(reporteService.listarPorRolAsignado(Rol.SOCIO, userDetails.getUsername()));
     }
 
     @Operation(summary = "Dashboard de reportes (Etapa 2)", description = "Lista filtrable y priorizada automáticamente. "
-            + "Un ADMIN ve solo lo asignado a administración (categoría error técnico + reportes escalados por moderación); un MOD solo ve los asignados a moderación. "
+            + "ADMIN ve lo asignado a administración (categoría error técnico sin spot + reportes escalados). "
+            + "MOD ve solo lo asignado a moderación. SOCIO ve solo lo asignado a SOCIO y de sus propios locales. "
             + "Todos los filtros son opcionales y combinables.", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/dashboard")
-    @PreAuthorize("hasAnyRole('MOD', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('MOD', 'ADMIN', 'SOCIO')")
     public ResponseEntity<List<ReporteResponseDTO>> obtenerDashboard(
             @AuthenticationPrincipal UserDetails userDetails,
-            @Parameter(description = "Filtra por estado: NUEVO, EN_REVISION, RESUELTO, RECHAZADO") @RequestParam(required = false) EstadoReporte estado,
+            @Parameter(description = "Filtra por estado: NUEVO, EN_REVISION, PENDIENTE_VALIDACION, RESUELTO, RECHAZADO") @RequestParam(required = false) EstadoReporte estado,
             @Parameter(description = "Filtra por gravedad: BAJA, MEDIA, ALTA, CRITICA") @RequestParam(required = false) Gravedad gravedad,
             @Parameter(description = "Filtra por categoria/tipo de reporte") @RequestParam(required = false) CategoriaReporte categoria,
             @Parameter(description = "Filtra por que se reporto: SPOT o RESENA") @RequestParam(required = false) TipoObjetivoReporte tipoObjetivo,
@@ -111,17 +124,18 @@ public class ReporteController {
 
         Rol rolUsuario = obtenerRol(userDetails);
         return ResponseEntity.ok(reporteService.obtenerDashboard(
-                rolUsuario, estado, gravedad, categoria, tipoObjetivo, escalado, orden));
+                rolUsuario, userDetails.getUsername(), estado, gravedad, categoria, tipoObjetivo, escalado, orden));
     }
 
-    @Operation(summary = "Cambiar el estado de un reporte", description = "Un MOD solo puede cambiar el estado de reportes asignados a moderación. Un ADMIN puede cambiar cualquier reporte.", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Cambiar el estado de un reporte", description = "Un SOCIO o un MOD solo pueden cambiar el estado de reportes asignados a su propia cola. Un ADMIN puede cambiar cualquier reporte. "
+            + "Si un SOCIO o un ADMIN marcan el reporte como RESUELTO, queda pendiente de validación de un MOD antes de notificar al miembro afectado.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estado actualizado"),
             @ApiResponse(responseCode = "403", description = "El reporte no pertenece a la cola de quien intenta cambiarlo"),
             @ApiResponse(responseCode = "404", description = "Reporte no encontrado")
     })
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyRole('MOD', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('MOD', 'ADMIN', 'SOCIO')")
     public ResponseEntity<ReporteResponseDTO> cambiarEstado(
             @PathVariable String id,
             @Valid @RequestBody CambiarEstadoRequestDTO request,
@@ -131,15 +145,16 @@ public class ReporteController {
                 reporteService.cambiarEstado(id, request, userDetails.getUsername(), rolUsuario));
     }
 
-    @Operation(summary = "Escalar un reporte a un administrador", description = "Solo un moderador puede escalar. El reporte pasa a estar asignado a ADMIN y su gravedad sube a CRITICA.", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Escalar un reporte al siguiente nivel", description = "Un SOCIO escala su reporte a un moderador. Un moderador escala su reporte a un administrador. "
+            + "Un administrador no puede escalar más (es el último nivel).", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Reporte escalado"),
-            @ApiResponse(responseCode = "400", description = "El reporte ya estaba escalado"),
+            @ApiResponse(responseCode = "400", description = "El reporte ya está en el nivel más alto de escalamiento"),
             @ApiResponse(responseCode = "403", description = "No tienes permiso para escalar este reporte"),
             @ApiResponse(responseCode = "404", description = "Reporte no encontrado")
     })
     @PatchMapping("/{id}/escalar")
-    @PreAuthorize("hasRole('MOD')")
+    @PreAuthorize("hasAnyRole('SOCIO', 'MOD')")
     public ResponseEntity<ReporteResponseDTO> escalarReporte(
             @PathVariable String id,
             @Valid @RequestBody EscalarReporteRequestDTO request,
@@ -149,13 +164,44 @@ public class ReporteController {
                 reporteService.escalarReporte(id, request, userDetails.getUsername(), rolUsuario));
     }
 
-    // Los endpoints ya están protegidos con @PreAuthorize a MOD/ADMIN, así que
-    // basta con distinguir cuál de los dos es para aplicar las reglas de
-    // negocio (ownership, visibilidad del dashboard, quién puede escalar).
+    @Operation(summary = "Listar reportes pendientes de validación", description = "Reportes que un SOCIO o un ADMIN marcaron como solucionados y esperan que un MOD apruebe o rechace la solución.", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/pendientes-validacion")
+    @PreAuthorize("hasRole('MOD')")
+    public ResponseEntity<List<ReporteResponseDTO>> listarPendientesValidacion() {
+        return ResponseEntity.ok(reporteService.listarPendientesValidacion());
+    }
+
+    @Operation(summary = "Validar (aprobar o rechazar) la solución de un reporte", description = "Solo un MOD puede validar. Si aprueba, el reporte pasa a RESUELTO y se notifica automáticamente al miembro afectado. "
+            + "Si rechaza, el reporte vuelve a EN_REVISION para que quien lo resolvió lo revise de nuevo.", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Validación registrada"),
+            @ApiResponse(responseCode = "400", description = "El reporte no está pendiente de validación"),
+            @ApiResponse(responseCode = "404", description = "Reporte no encontrado")
+    })
+    @PatchMapping("/{id}/validar")
+    @PreAuthorize("hasRole('MOD')")
+    public ResponseEntity<ReporteResponseDTO> validarReporte(
+            @PathVariable String id,
+            @Valid @RequestBody ValidarReporteRequestDTO request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(
+                reporteService.validarReporte(id, request, userDetails.getUsername()));
+    }
+
+    // Los endpoints ya están protegidos con @PreAuthorize a MOD/ADMIN/SOCIO,
+    // así que basta con distinguir cuál de los tres es para aplicar las
+    // reglas de negocio (ownership, visibilidad del dashboard, quién puede
+    // escalar a quién).
     private Rol obtenerRol(UserDetails userDetails) {
-        boolean esAdmin = userDetails.getAuthorities().stream()
+        List<String> authorities = userDetails.getAuthorities().stream()
                 .map(authority -> authority.getAuthority())
-                .anyMatch("ROLE_ADMIN"::equals);
-        return esAdmin ? Rol.ADMIN : Rol.MOD;
+                .toList();
+        if (authorities.contains("ROLE_ADMIN")) {
+            return Rol.ADMIN;
+        }
+        if (authorities.contains("ROLE_MOD")) {
+            return Rol.MOD;
+        }
+        return Rol.SOCIO;
     }
 }
