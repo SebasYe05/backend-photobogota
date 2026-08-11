@@ -29,9 +29,12 @@ import com.photobogota.api.model.TipoObjetivoReporte;
 import com.photobogota.api.repository.CalificacionRepository;
 import com.photobogota.api.repository.ReporteRepository;
 import com.photobogota.api.repository.SpotRepository;
+import com.photobogota.api.service.IPuntosService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReporteServiceImpl implements IReporteService {
@@ -43,6 +46,7 @@ public class ReporteServiceImpl implements IReporteService {
     private final SpotRepository spotRepository;
     private final CalificacionRepository calificacionRepository;
     private final MongoTemplate mongoTemplate;
+    private final IPuntosService puntosService;
 
     @Override
     public ReporteResponseDTO crearReporte(CrearReporteRequestDTO request, String usuario) {
@@ -200,6 +204,16 @@ public class ReporteServiceImpl implements IReporteService {
         }
 
         Reporte actualizado = reporteRepository.save(reporte);
+
+        if (request.getEstado() == EstadoReporte.RESUELTO && reporte.getReportadoPor() != null) {
+            try {
+                puntosService.sumarPuntos(reporte.getReportadoPor(),
+                        com.photobogota.api.model.TipoPuntos.REPORTE_VALIDADO, reporte.getId());
+            } catch (Exception e) {
+                log.error("No se pudo otorgar puntos por reporte validado {}: {}", id, e.getMessage());
+            }
+        }
+
         return mapearADTO(actualizado);
     }
 

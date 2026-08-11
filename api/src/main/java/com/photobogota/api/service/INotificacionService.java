@@ -47,4 +47,6 @@ public interface INotificacionService {
     // respeta preferencias de silencio: es información crítica de la cuenta,
     // no un aviso discrecional.
     void notificarSistema(String destinatarioUsername, String titulo, String mensaje);
+
+    void notificarSubidaNivel(String destinatarioUsername, int nuevoNivel);
 }

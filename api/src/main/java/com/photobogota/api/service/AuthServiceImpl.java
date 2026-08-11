@@ -57,6 +57,7 @@ public class AuthServiceImpl implements IAuthService {
     private final CodigoRecuperacionRepository codigoRecuperacionRepository;
     private final IEmailService emailService;
     private final SesionRepository sesionRepository;
+    private final IFiltroContenidoService filtroContenidoService;
 
     @Override
     @Transactional
@@ -138,12 +139,14 @@ public class AuthServiceImpl implements IAuthService {
         Usuario perfilUsuario = usuarioRepository.findById(usuario.getId())
                 .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-        // 4. Obtener el nivel del usuario (solo los miembros tienen nivel)
+        // 4. Obtener el nivel y puntos del usuario (solo los miembros tienen nivel/puntos)
         Integer nivel = null;
+        Long puntos = null;
         if (usuario.getRol() == Rol.MIEMBRO && perfilUsuario instanceof Miembro) {
             nivel = ((Miembro) perfilUsuario).getNivel();
+            puntos = ((Miembro) perfilUsuario).getPuntos();
         } else {
-            nivel = 1; // Valor por defecto para otros tipos de usuario
+            nivel = 1;
         }
 
         // 5. Generar el token JWT con claims adicionales (rol y email)
@@ -168,7 +171,7 @@ public class AuthServiceImpl implements IAuthService {
                 .build();
         sesionRepository.save(sesion);
 
-// 7. Mapear y retornar la respuesta con TODOS los datos del perfil
+ // 7. Mapear y retornar la respuesta con TODOS los datos del perfil
          return LoginResponseDTO.builder()
                  .token(token)
                  .refreshToken(refreshToken)
@@ -176,12 +179,14 @@ public class AuthServiceImpl implements IAuthService {
                  .nombreUsuario(usuario.getNombreUsuario())
                  .rol(usuario.getRol().name())
                  .nivel(nivel)
+                 .puntos(puntos)
                  .mensaje("Autenticación exitosa")
                  .nombresCompletos(perfilUsuario.getNombresCompletos())
                  .telefono(perfilUsuario.getTelefono())
                  .biografia(perfilUsuario.getBiografia())
                  .fotoPerfil(perfilUsuario.getFotoPerfil())
                  .estadoCuenta(perfilUsuario.getEstadoCuenta())
+                 .sancion(filtroContenidoService.obtenerSancionActual(usuario.getNombreUsuario()))
                  .build();
     }
 
@@ -212,10 +217,12 @@ public class AuthServiceImpl implements IAuthService {
         Usuario perfilUsuario = usuarioRepository.findById(usuario.getId())
                 .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-        // 5. Obtener el nivel del usuario
+        // 5. Obtener el nivel y puntos del usuario
         Integer nivel = null;
+        Long puntos = null;
         if (usuario.getRol() == Rol.MIEMBRO && perfilUsuario instanceof Miembro) {
             nivel = ((Miembro) perfilUsuario).getNivel();
+            puntos = ((Miembro) perfilUsuario).getPuntos();
         } else {
             nivel = 1;
         }
@@ -235,7 +242,7 @@ public class AuthServiceImpl implements IAuthService {
         sesion.setExpiraEn(Instant.now().plus(7, ChronoUnit.DAYS));
         sesionRepository.save(sesion);
 
-// 9. Retornar respuesta con los nuevos tokens y datos del perfil
+ // 9. Retornar respuesta con los nuevos tokens y datos del perfil
          return LoginResponseDTO.builder()
                  .token(newToken)
                  .refreshToken(newRefreshToken)
@@ -243,12 +250,14 @@ public class AuthServiceImpl implements IAuthService {
                  .nombreUsuario(usuario.getNombreUsuario())
                  .rol(usuario.getRol().name())
                  .nivel(nivel)
+                 .puntos(puntos)
                  .mensaje("Token refrescado exitosamente")
                  .nombresCompletos(perfilUsuario.getNombresCompletos())
                  .telefono(perfilUsuario.getTelefono())
                  .biografia(perfilUsuario.getBiografia())
                  .fotoPerfil(perfilUsuario.getFotoPerfil())
                  .estadoCuenta(perfilUsuario.getEstadoCuenta())
+                 .sancion(filtroContenidoService.obtenerSancionActual(usuario.getNombreUsuario()))
                  .build();
     }
 
@@ -296,10 +305,12 @@ public class AuthServiceImpl implements IAuthService {
         Usuario perfilUsuario = usuarioRepository.findById(usuarioAuth.getId())
                 .orElseThrow(() -> new RuntimeException("Perfil de usuario no encontrado"));
 
-        // Obtener el nivel si es miembro
+        // Obtener el nivel y puntos si es miembro
         Integer nivel = null;
+        Long puntos = null;
         if (usuarioAuth.getRol() == Rol.MIEMBRO && perfilUsuario instanceof Miembro) {
             nivel = ((Miembro) perfilUsuario).getNivel();
+            puntos = ((Miembro) perfilUsuario).getPuntos();
         } else {
             nivel = 1; // Valor por defecto
         }
@@ -316,6 +327,8 @@ public class AuthServiceImpl implements IAuthService {
                 .fotoPerfil(perfilUsuario.getFotoPerfil())
                 .rol(usuarioAuth.getRol().name())
                 .nivel(nivel)
+                .puntos(puntos)
+                .sancion(filtroContenidoService.obtenerSancionActual(usuarioAuth.getNombreUsuario()))
                 .build();
     }
 

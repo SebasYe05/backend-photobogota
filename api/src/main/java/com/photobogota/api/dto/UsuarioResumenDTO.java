@@ -23,6 +23,9 @@ public class UsuarioResumenDTO {
     @Schema(description = "Nivel del usuario", example = "1")
     private Integer nivel;
 
+    @Schema(description = "Puntos acumulados del usuario (solo miembros)", example = "150")
+    private Long puntos;
+
     @Schema(description = "Correo electrónico del usuario", example = "juan.romero@example.com")
     private String email;
 
@@ -31,4 +34,7 @@ public class UsuarioResumenDTO {
 
     @Schema(description = "Número de teléfono del usuario", example = "3201234567")
     private String telefono;
+
+    @Schema(description = "Sanción activa del usuario (null si no tiene)")
+    private SancionDTO sancion;
 }

@@ -250,6 +250,14 @@ public class NotificacionServiceImpl implements INotificacionService {
         notificacionRepository.save(notificacion);
     }
 
+    @Override
+    public void notificarSubidaNivel(String destinatarioUsername, int nuevoNivel) {
+        String titulo = "¡Subiste de nivel!";
+        String mensaje = "Felicidades " + destinatarioUsername
+                + ", has alcanzado el nivel " + nuevoNivel + " en PhotoBogotá.";
+        notificarSistema(destinatarioUsername, titulo, mensaje);
+    }
+
     // ==================== NÚCLEO COMÚN: crear + enviar respetando preferencias
     // ====================
 

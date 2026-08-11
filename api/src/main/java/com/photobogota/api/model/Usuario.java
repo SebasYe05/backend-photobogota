@@ -34,4 +34,13 @@ public abstract class Usuario { // Hacemos la clase abstracta para que no se pue
     
     @Builder.Default
     private LocalDateTime fechaRegistro = LocalDateTime.now();
+
+    // Conteo de infracciones detectadas por el filtro automático de contenido.
+    // Determina la sanción progresiva: 1 notificación, 2 mute, 3 suspensión, 4+ ban.
+    @Builder.Default
+    private Integer contadorInfracciones = 0;
+
+    // Sanción actualmente activa (si existe). Se usa para bloquear publicaciones
+    // y para que el frontend informe al usuario sobre su estado.
+    private Sancion sancion;
 }

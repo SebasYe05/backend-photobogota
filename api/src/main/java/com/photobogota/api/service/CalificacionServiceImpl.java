@@ -6,8 +6,10 @@ import com.photobogota.api.exception.ResourceAlreadyExistsException;
 import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.model.Calificacion;
 import com.photobogota.api.model.Spot;
+import com.photobogota.api.model.TipoContenidoModerado;
 import com.photobogota.api.repository.CalificacionRepository;
 import com.photobogota.api.repository.SpotRepository;
+import com.photobogota.api.service.IPuntosService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,8 @@ public class CalificacionServiceImpl implements ICalificacionService {
     private final CalificacionRepository calificacionRepository;
     private final SpotRepository spotRepository;
     private final INotificacionService notificacionService;
+    private final IPuntosService puntosService;
+    private final IFiltroContenidoService filtroContenidoService;
 
     @Override
     @Transactional
@@ -34,6 +38,8 @@ public class CalificacionServiceImpl implements ICalificacionService {
         if (calificacionRepository.findBySpotIdAndUsuario(spotId, usuario) != null) {
             throw new ResourceAlreadyExistsException("calificacion para este spot", usuario);
         }
+
+        filtroContenidoService.validarContenido(usuario, TipoContenidoModerado.RESENA, request.getComentario());
 
         Calificacion calificacion = new Calificacion();
         calificacion.setSpotId(spotId);
@@ -52,6 +58,13 @@ public class CalificacionServiceImpl implements ICalificacionService {
             log.error("No se pudo notificar la nueva calificación en el spot {}: {}", spotId, e.getMessage());
         }
 
+        try {
+            puntosService.sumarPuntos(usuario,
+                    com.photobogota.api.model.TipoPuntos.CALIFICAR_SPOT, calificacion.getId());
+        } catch (Exception e) {
+            log.error("No se pudo otorgar puntos por calificar spot {}: {}", spotId, e.getMessage());
+        }
+
         return CalificacionResponseDTO.from(calificacion);
     }
 
@@ -68,6 +81,8 @@ public class CalificacionServiceImpl implements ICalificacionService {
         if (!calificacion.getUsuario().equals(usuario)) {
             throw new ResourceNotFoundException("No tienes permiso para modificar esta calificacion");
         }
+
+        filtroContenidoService.validarContenido(usuario, TipoContenidoModerado.RESENA, request.getComentario());
 
         calificacion.setEstrellas(request.getEstrellas());
         calificacion.setComentario(request.getComentario());

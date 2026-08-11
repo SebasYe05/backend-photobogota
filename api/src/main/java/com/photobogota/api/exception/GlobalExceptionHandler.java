@@ -133,6 +133,40 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
+    // 4.2.1 Argumentos inválidos (400) — ej. ajuste de puntos sin usuarioId o con delta=0
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(
+            IllegalArgumentException ex, HttpServletRequest request) {
+
+        log.warn("Argumento inválido en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    // 4.3 Contenido inapropiado detectado por el filtro automático (403)
+    @ExceptionHandler(ContenidoInapropiadoException.class)
+    public ResponseEntity<Map<String, Object>> handleContenidoInapropiado(
+            ContenidoInapropiadoException ex, HttpServletRequest request) {
+
+        log.warn("Contenido inapropiado en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        Map<String, Object> body = buildBody(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+        if (ex.getPalabrasDetectadas() != null && !ex.getPalabrasDetectadas().isEmpty()) {
+            body.put("palabrasDetectadas", ex.getPalabrasDetectadas());
+        }
+        if (ex.getSancionAplicada() != null) {
+            body.put("sancionAplicada", ex.getSancionAplicada());
+        }
+        if (ex.getFechaExpiracionSancion() != null) {
+            body.put("fechaExpiracionSancion", ex.getFechaExpiracionSancion());
+        }
+        if (ex.getContadorInfracciones() != null) {
+            body.put("contadorInfracciones", ex.getContadorInfracciones());
+        }
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
     // 3.1 No autorizado personalizado (401)
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Map<String, Object>> handleUnauthorized(

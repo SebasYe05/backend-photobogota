@@ -16,6 +16,7 @@ import com.photobogota.api.model.Calificacion;
 import com.photobogota.api.model.Guardado;
 import com.photobogota.api.model.Miembro;
 import com.photobogota.api.model.Spot;
+import com.photobogota.api.model.TipoContenidoModerado;
 import com.photobogota.api.model.Usuario;
 import com.photobogota.api.model.UsuarioAuth;
 import com.photobogota.api.repository.CalificacionRepository;
@@ -44,6 +45,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
     private final CalificacionRepository calificacionRepository;
     private final GuardadoRepository guardadoRepository;
     private final SpotMapper spotMapper;
+    private final IFiltroContenidoService filtroContenidoService;
 
     @Override
     public PerfilUsuarioDTO editarPerfil(String nombreUsuario, EditarPerfilDTO dto) {
@@ -68,6 +70,8 @@ public class UsuarioServiceImpl implements IUsuarioService {
             usuario.setFotoPerfil(dto.getFotoPerfil());
         }
         if (dto.getBiografia() != null) {
+            filtroContenidoService.validarContenido(nombreUsuario, TipoContenidoModerado.BIOGRAFIA,
+                    dto.getBiografia());
             usuario.setBiografia(dto.getBiografia());
         }
 

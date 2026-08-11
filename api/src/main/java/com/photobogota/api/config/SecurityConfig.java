@@ -103,6 +103,8 @@ public class SecurityConfig {
                                                  .authenticated()
                                                  .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/me/resenas")
                                                  .authenticated()
+                                                 .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/me/puntos")
+                                                 .authenticated()
                                                  .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/me/guardados")
                                                  .authenticated()
                                                  .requestMatchers(HttpMethod.POST, "/api/v1/usuarios/me/guardados/**")

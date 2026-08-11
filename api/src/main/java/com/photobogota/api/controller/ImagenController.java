@@ -12,7 +12,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -27,7 +26,7 @@ public class ImagenController {
     @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> subirAvatar(
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @RequestParam("file") MultipartFile file) {
         validarImagen(file);
         String url = imagenService.subirAvatar(file);
         return ResponseEntity.ok(Map.of("url", url));
@@ -37,7 +36,7 @@ public class ImagenController {
     @PostMapping(value = "/spot", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('MIEMBRO', 'SOCIO', 'MOD')")
     public ResponseEntity<Map<String, String>> subirImagenSpot(
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @RequestParam("file") MultipartFile file) {
         validarImagen(file);
         String url = imagenService.subirImagenSpot(file);
         return ResponseEntity.ok(Map.of("url", url));
@@ -47,7 +46,7 @@ public class ImagenController {
     @PostMapping(value = "/reporte", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> subirEvidenciaReporte(
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @RequestParam("file") MultipartFile file) {
         validarImagen(file);
         String url = imagenService.subirEvidenciaReporte(file);
         return ResponseEntity.ok(Map.of("url", url));
@@ -56,7 +55,7 @@ public class ImagenController {
     @Operation(summary = "Subir documento de aspirante a socio", description = "Sube el RUT/cédula (PDF o imagen) de un aspirante. No requiere cuenta, ya que el aspirante aún no tiene una.")
     @PostMapping(value = "/aspirante-documento", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> subirDocumentoAspirante(
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @RequestParam("file") MultipartFile file) {
         validarDocumento(file);
         String url = imagenService.subirDocumentoAspirante(file);
         return ResponseEntity.ok(Map.of("url", url));

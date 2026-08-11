@@ -31,6 +31,9 @@ public class LoginResponseDTO {
     @Schema(description = "Nivel del usuario (para miembros)", example = "1")
     private Integer nivel;
 
+    @Schema(description = "Puntos acumulados del usuario (solo miembros)", example = "150")
+    private Long puntos;
+
     @Schema(description = "Nombres completos del usuario", example = "Juan Romero")
     private String nombresCompletos;
 
@@ -48,4 +51,7 @@ public class LoginResponseDTO {
 
     @Schema(description = "Estado de la cuenta del usuario", example = "true")
     private Boolean estadoCuenta;
+
+    @Schema(description = "Sanción activa del usuario (null si no tiene)")
+    private SancionDTO sancion;
 }
