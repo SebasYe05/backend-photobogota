@@ -6,51 +6,55 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build, Analyze and Pack
     runs-on: ubuntu-latest
-
     env:
-      # Secretos para PhotoBogota
       MONGO_USER: ${{ secrets.MONGO_USER }}
       MONGO_PASS: ${{ secrets.MONGO_PASS }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       MAIL_PORT: ${{ secrets.MAIL_PORT }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      CLOUDINARY_URL: ${{ secrets.CLOUDINARY_URL }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 # Deshabilita clones superficiales para mejorar la relevancia del análisis de Sonar
 
-    - name: Set up JDK 25
-      uses: actions/setup-java@v4
+    steps:
+    - uses: actions/checkout@v7
       with:
-        java-version: '25' 
+        fetch-depth: 0
+
+    - uses: actions/setup-java@v5
+      with:
+        java-version: '25'
         distribution: 'temurin'
         cache: maven
 
-    - name: Cache SonarQube packages
-      uses: actions/cache@v4
+    - uses: actions/cache@v6
       with:
         path: ~/.sonar/cache
         key: ${{ runner.os }}-sonar
         restore-keys: ${{ runner.os }}-sonar
 
-    # Ejecutar la compilación y el análisis con Sonar saltándose los tests
+    # Solo analiza con Sonar si es push a main o PR desde el mismo repo (no forks externos)
     - name: Build and analyze with Sonar
+      if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
       run: >
-        mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.6.0.6792:sonar 
-        -Dsonar.projectKey=SebasYe05_backend-photobogota 
+        mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.6.0.6792:sonar
+        -Dsonar.projectKey=SebasYe05_backend-photobogota
         -Dsonar.organization=sebasye05
         -DskipTests
         --file pom.xml
       working-directory: api
 
-    # Por si necesitamos la imagen local después del análisis
     - name: Build Docker Image
       run: docker build -t backend-photobogota:latest ./api

@@ -31,6 +31,7 @@ public class PalabraProhibida {
 
     private String categoria;
 
+    @Builder.Default
     private List<String> excepciones = new ArrayList<>();
 
     private String creadoPor;
