@@ -49,3 +49,39 @@ El sistema organiza los puntos de interés en categorías temáticas para person
 1. Configurar MongoDB en el entorno local (base de datos no relacional).
 2. Ejecutar `mvn clean install` para la generación de código de MapStruct.
 3. Iniciar la aplicación con `mvn spring-boot:run`.
+
+## Despliegue en AWS EC2 (Docker)
+
+### 1. Variables de entorno
+Copia `.env.example` a `.env` y completa los valores (MongoDB Atlas, JWT,
+correo). Los dos puntos más fácil de olvidar y que rompen en producción:
+
+- **`CORS_ALLOWED_ORIGINS`**: dominio del frontend (Vercel, etc.), separados
+  por coma. Sin esto, el navegador bloquea las peticiones.
+- **`STORAGE_LOCAL_URL_BASE`**: `http://AWS:8080/uploads` (tu IP
+  pública de EC2). Sin esto la BD guarda `http://localhost:8080/uploads/...`
+  y las imágenes salen rotas para todos.
+
+> Alternativa: define `CLOUDINARY_URL` para subir las imágenes a Cloudinary
+> (URLs HTTPS absolutas, sin almacenamiento local).
+
+### 2. Compilar y arrancar
+```bash
+# Desde la raíz del repo (donde está compose.yaml y .env)
+docker compose up --build -d
+```
+
+### 3. Red
+Asegúrate de que el Security Group de la EC2 permita el puerto 8080 desde
+donde vayas a consumir la API (ideal: solo desde el front/alguna IP fija).
+
+### 4. Volúmenes
+`compose.yaml` monta `uploads:/uploads` y `logs:/logs`. Las imágenes y los
+logs sobreviven a redespliegues; respáldalos o mueve a un EFS si quieres
+alta disponibilidad.
+
+### 5. URLs de imagen
+Las imágenes guardadas apuntan a `STORAGE_LOCAL_URL_BASE`. Si cambias el
+dominio/IP las imágenes viejas conservan la URL antigua (quedarían rotas
+hasta re-subirlas). Por eso, usa un dominio estable o Cloudinary desde el
+inicio.

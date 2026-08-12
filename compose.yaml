@@ -3,7 +3,19 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
+    container_name: photobogota-backend
     ports:
       - "8080:8080"
     env_file:
       - .env
+    volumes:
+      # Persistencia: las imágenes y los logs sobreviven a niveles de redeploy.
+      - uploads:/uploads
+      - logs:/logs
+    restart: unless-stopped
+
+volumes:
+  uploads:
+    driver: local
+  logs:
+    driver: local

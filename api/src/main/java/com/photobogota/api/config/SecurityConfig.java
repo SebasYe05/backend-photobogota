@@ -2,6 +2,7 @@ package com.photobogota.api.config;
 
 import java.util.Arrays;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -36,6 +37,13 @@ public class SecurityConfig {
                 this.rateLimitFilter = rateLimitFilter;
                 this.mantenimientoFilter = mantenimientoFilter;
         }
+
+        // Orígenes permitidos para CORS. Se leen de la propiedad
+        // application.security.cors.allowed-origins (default localhost). En
+        // producción se sobrescribe con la variable de entorno
+        // CORS_ALLOWED_ORIGINS (p. ej. el dominio del front en Vercel).
+        @Value("${application.security.cors.allowed-origins}")
+        private String[] allowedOrigins;
 
         @Bean
         public PasswordEncoder passwordEncoder() {
@@ -171,13 +179,7 @@ public class SecurityConfig {
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
 
-                configuration.setAllowedOriginPatterns(Arrays.asList(
-                                "http://localhost:5173",
-                                "http://127.0.0.1:5173",
-                                "http://192.168.*.*:5173",
-                                "http://localhost:3000",
-                                "http://127.0.0.1:3000",
-                                "http://localhost:55352"));
+                configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins));
                 configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 configuration.setAllowedHeaders(
                                 Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
