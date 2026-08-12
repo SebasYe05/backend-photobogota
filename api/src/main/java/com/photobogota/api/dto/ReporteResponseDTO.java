@@ -79,6 +79,9 @@ public class ReporteResponseDTO {
     @Schema(description = "nombreUsuario de quien hizo el ultimo cambio de estado")
     private String actualizadoPor;
 
+    @Schema(description = "nombreUsuario (SOCIO/ADMIN) que propuso la solucion y que espera validacion de un MOD")
+    private String resueltoPor;
+
     @Schema(description = "Estado actual del reporte")
     private EstadoReporte estado;
 

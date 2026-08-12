@@ -87,6 +87,11 @@ public class Reporte {
     // nombreUsuario de quien hizo el último cambio de estado (auditoría)
     private String actualizadoPor;
 
+    // nombreUsuario (SOCIO/ADMIN) que propuso la solución. Cuando un SOCIO o un
+    // ADMIN marca un reporte como RESUELTO, el backend lo deja en
+    // PENDIENTE_VALIDACION (con este campo cargado) hasta que un MOD lo apruebe.
+    private String resueltoPor;
+
     // Bitácora de observaciones dejadas por MOD/ADMIN al cambiar el estado.
     // Estructurado (no se mezcla con la descripción original del reportante).
     @Builder.Default

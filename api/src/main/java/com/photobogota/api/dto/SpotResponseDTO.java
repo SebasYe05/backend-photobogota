@@ -39,6 +39,21 @@ public class SpotResponseDTO {
     @Schema(description = "Consejos para tomar fotos en el spot", example = "Evitar la luz directa del sol")
     private String tipsFoto;
 
+    @Schema(description = "Tipo del lugar: LOCAL o SPOT", example = "SPOT")
+    private String tipo;
+
+    @Schema(description = "Teléfono de contacto (solo locales de socios)")
+    private String telefono;
+
+    @Schema(description = "Horario de atención (solo locales de socios)")
+    private String horario;
+
+    @Schema(description = "Sitio web (solo locales de socios)")
+    private String sitioWeb;
+
+    @Schema(description = "true si el spot/local tiene al menos una promoción activa vigente")
+    private Boolean tienePromocion;
+
     @Schema(description = "Lista de imágenes del spot", example = "[\"/images/spot1.jpg\", \"/images/spot2.jpg\"]")
     private List<String> imagenes;
 

@@ -24,6 +24,15 @@ public class Spot {
     private String recomendacion;
     private String tipsFoto;
 
+    // Distingue un local comercial (creado por un SOCIO) de un spot fotográfico
+    // genérico (creado por MIEMBRO/MOD/ADMIN). Valores: "LOCAL" o "SPOT".
+    private String tipo;
+
+    // Datos de contacto del local comercial (solo aplican si tipo = LOCAL)
+    private String telefono;
+    private String horario;
+    private String sitioWeb;
+
     private List<String> imagenes = new ArrayList<>(); // URLs en tu storage
 
     private Double rating = 0.0;

@@ -18,6 +18,10 @@ public interface ReporteRepository extends MongoRepository<Reporte, String> {
 
     List<Reporte> findByAsignadoAAndEstado(Rol asignadoA, EstadoReporte estado);
 
+    // Cola de validación de moderador: reportes que un SOCIO/ADMIN marcó como
+    // solucionado y que esperan aprobación (estado PENDIENTE_VALIDACION).
+    List<Reporte> findByEstado(EstadoReporte estado);
+
     // Reincidencia: cuántos reportes activos (no resueltos/rechazados) existen
     // ya sobre el mismo spot o la misma reseña. Se usa para subir la gravedad
     // automáticamente cuando un mismo objetivo se reporta varias veces.

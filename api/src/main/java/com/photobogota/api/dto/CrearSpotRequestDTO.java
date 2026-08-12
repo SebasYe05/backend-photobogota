@@ -44,6 +44,19 @@ public class CrearSpotRequestDTO {
     @Schema(description = "Consejos para tomar fotos en el spot", example = "Usa el ángulo de la luz del sol para obtener mejores imágenes")
     private String tipsFoto;
 
+    @Pattern(regexp = "LOCAL|SPOT", message = "tipo debe ser LOCAL o SPOT")
+    @Schema(description = "Tipo del lugar: LOCAL (comercial, lo crea un SOCIO) o SPOT (fotográfico genérico)", example = "SPOT")
+    private String tipo;
+
+    @Schema(description = "Teléfono de contacto (solo aplica a locales de socios)")
+    private String telefono;
+
+    @Schema(description = "Horario de atención (solo aplica a locales de socios)", example = "Lun a Vie 9:00-18:00")
+    private String horario;
+
+    @Schema(description = "Sitio web del local (solo aplica a locales de socios)")
+    private String sitioWeb;
+
     @Schema(description = "Lista de URLs de imágenes del spot", example = "[\"/spots/imagen1.jpg\", \"/spots/imagen2.jpg\"]")
     private List<String> imagenes; // URLs ya subidas, o vacío
 }

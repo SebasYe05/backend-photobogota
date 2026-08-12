@@ -29,13 +29,18 @@ public class SpotController {
 
     private final SpotService spotService;
 
-    @Operation(summary = "Listar spots", description = "Retorna todos los spots, con filtros opcionales por categoría y/o localidad")
+    @Operation(summary = "Listar spots", description = "Retorna todos los spots, con filtros opcionales por categoría, localidad, tipo (LOCAL/SPOT), nombre y 'mios' (autenticado)")
     @ApiResponse(responseCode = "200", description = "Lista de spots")
     @GetMapping
     public ResponseEntity<List<SpotResumenDTO>> obtenerSpots(
             @Parameter(description = "Nombre de la categoría para filtrar", example = "Paisaje urbano") @RequestParam(required = false) String categoria,
-            @Parameter(description = "Nombre de la localidad para filtrar", example = "Chapinero") @RequestParam(required = false) String localidad) {
-        return ResponseEntity.ok(spotService.obtenerTodos(categoria, localidad));
+            @Parameter(description = "Nombre de la localidad para filtrar", example = "Chapinero") @RequestParam(required = false) String localidad,
+            @Parameter(description = "Tipo de lugar: LOCAL (comercial) o SPOT (fotográfico)", example = "LOCAL") @RequestParam(required = false) String tipo,
+            @Parameter(description = "Filtra por nombre (búsqueda parcial, insensible a mayúsculas)") @RequestParam(required = false) String nombre,
+            @Parameter(description = "true solo si se quieren los spots creados por el usuario autenticado") @RequestParam(required = false) Boolean mios,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails != null ? userDetails.getUsername() : null;
+        return ResponseEntity.ok(spotService.obtenerTodos(categoria, localidad, tipo, nombre, mios, username));
     }
 
     @Operation(summary = "Obtener detalle de un spot")

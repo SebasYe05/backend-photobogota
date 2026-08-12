@@ -133,6 +133,33 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
+    // 4.3 Contenido rechazado por el filtro automático o usuario sancionado.
+    // La primera infracción (NOTIFICACION) o una palabra nueva detectada → 400;
+    // si el usuario YA tiene una sanción activa que bloquea publicación → 403.
+    // Se devuelven los datos estructurados para que el frontend muestre el
+    // castigo aplicado y permita apelar al usuario.
+    @ExceptionHandler(ContenidoInapropiadoException.class)
+    public ResponseEntity<Map<String, Object>> handleContenidoInapropiado(
+            ContenidoInapropiadoException ex, HttpServletRequest request) {
+
+        boolean yaSancionado = ex.getPalabrasDetectadas() == null
+                || ex.getPalabrasDetectadas().isEmpty();
+        HttpStatus status = yaSancionado ? HttpStatus.FORBIDDEN : HttpStatus.BAD_REQUEST;
+
+        log.warn("Contenido rechazado en {}: {} (sancion={})",
+                request.getRequestURI(), ex.getMessage(), ex.getSancionAplicada());
+
+        Map<String, Object> body = buildBody(status, ex.getMessage(), request);
+        body.put("tipo", ex.getSancionAplicada() != null ? ex.getSancionAplicada().name() : null);
+        body.put("palabrasDetectadas", ex.getPalabrasDetectadas());
+        body.put("contadorInfracciones", ex.getContadorInfracciones());
+        if (ex.getFechaExpiracionSancion() != null) {
+            body.put("fechaExpiracion", ex.getFechaExpiracionSancion().toString());
+        }
+
+        return new ResponseEntity<>(body, status);
+    }
+
     // 3.1 No autorizado personalizado (401)
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Map<String, Object>> handleUnauthorized(

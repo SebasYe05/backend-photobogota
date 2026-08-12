@@ -90,6 +90,10 @@ public class SecurityConfig {
                                                 // Spots públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/spots/**").permitAll()
 
+                                                // Promociones públicas (solo lectura): el mapa consulta las activas
+                                                // y las de cada local. Crear/gestionar requiere rol SOCIO (vía @PreAuthorize).
+                                                .requestMatchers(HttpMethod.GET, "/api/v1/promociones/**").permitAll()
+
                                                 // Categorías y localidades públicas
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/categorias",
                                                                 "/api/v1/localidades")

@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -15,6 +17,7 @@ import com.photobogota.api.dto.CambiarEstadoRequestDTO;
 import com.photobogota.api.dto.CrearReporteRequestDTO;
 import com.photobogota.api.dto.EscalarReporteRequestDTO;
 import com.photobogota.api.dto.ReporteResponseDTO;
+import com.photobogota.api.dto.ValidarReporteRequestDTO;
 import com.photobogota.api.exception.AccessForbiddenException;
 import com.photobogota.api.exception.OperacionInvalidaException;
 import com.photobogota.api.exception.ResourceNotFoundException;
@@ -47,6 +50,7 @@ public class ReporteServiceImpl implements IReporteService {
     private final CalificacionRepository calificacionRepository;
     private final MongoTemplate mongoTemplate;
     private final IPuntosService puntosService;
+    private final INotificacionService notificacionService;
 
     @Override
     public ReporteResponseDTO crearReporte(CrearReporteRequestDTO request, String usuario) {
@@ -138,6 +142,7 @@ public class ReporteServiceImpl implements IReporteService {
     @Override
     public List<ReporteResponseDTO> obtenerDashboard(
             Rol rolUsuario,
+            String username,
             EstadoReporte estado,
             Gravedad gravedad,
             CategoriaReporte categoria,
@@ -147,12 +152,23 @@ public class ReporteServiceImpl implements IReporteService {
 
         Query query = new Query();
 
-        // ADMIN solo ve lo que le fue asignado a ADMIN: los reportes de
-        // categoría ERROR_TECNICO (asignación automática) y los que un
-        // moderador escaló (escalar() cambia asignadoA a ADMIN). NO ve
-        // la cola de MOD que todavía no fue escalada.
-        // MOD solo ve su propia cola (lo que sigue asignado a MOD).
-        query.addCriteria(Criteria.where(Reporte.Fields.asignadoA).is(rolUsuario));
+        if (rolUsuario == Rol.SOCIO) {
+            // Un SOCIO atiende los reportes sobre SUS propios locales.
+            List<String> misSpotIds = spotRepository.findByCreadorUsername(username).stream()
+                    .map(Spot::getId)
+                    .toList();
+            if (misSpotIds.isEmpty()) {
+                return List.of();
+            }
+            query.addCriteria(Criteria.where(Reporte.Fields.spotId).in(misSpotIds));
+        } else {
+            // ADMIN solo ve lo que le fue asignado a ADMIN: los reportes de
+            // categoría ERROR_TECNICO (asignación automática) y los que un
+            // moderador escaló (escalar() cambia asignadoA a ADMIN). NO ve
+            // la cola de MOD que todavía no fue escalada.
+            // MOD solo ve su propia cola (lo que sigue asignado a MOD).
+            query.addCriteria(Criteria.where(Reporte.Fields.asignadoA).is(rolUsuario));
+        }
 
         if (estado != null) {
             query.addCriteria(Criteria.where(Reporte.Fields.estado).is(estado));
@@ -186,9 +202,20 @@ public class ReporteServiceImpl implements IReporteService {
         Reporte reporte = reporteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reporte no encontrado con id: " + id));
 
-        validarPropiedad(reporte, rolUsuario);
+        validarPropiedad(reporte, rolUsuario, usuario);
 
-        reporte.setEstado(request.getEstado());
+        // Si un SOCIO o un ADMIN marca como RESUELTO, la solución no se
+        // notifica de inmediato: el reporte queda PENDIENTE_VALIDACION hasta
+        // que un MOD la apruebe (HU 15 pt 4-5, HU 16 pt 4-5).
+        EstadoReporte estadoFinal = request.getEstado();
+        if (request.getEstado() == EstadoReporte.RESUELTO && rolUsuario != Rol.MOD) {
+            estadoFinal = EstadoReporte.PENDIENTE_VALIDACION;
+            reporte.setResueltoPor(usuario);
+        } else {
+            reporte.setResueltoPor(null);
+        }
+
+        reporte.setEstado(estadoFinal);
         reporte.setActualizadoPor(usuario);
         reporte.setFechaActualizacion(LocalDateTime.now());
 
@@ -205,13 +232,12 @@ public class ReporteServiceImpl implements IReporteService {
 
         Reporte actualizado = reporteRepository.save(reporte);
 
-        if (request.getEstado() == EstadoReporte.RESUELTO && reporte.getReportadoPor() != null) {
-            try {
-                puntosService.sumarPuntos(reporte.getReportadoPor(),
-                        com.photobogota.api.model.TipoPuntos.REPORTE_VALIDADO, reporte.getId());
-            } catch (Exception e) {
-                log.error("No se pudo otorgar puntos por reporte validado {}: {}", id, e.getMessage());
-            }
+        // Solo un MOD que marca RESUELTO de inmediato otorga puntos (un
+        // SOCIO/ADMIN pasa por PENDIENTE_VALIDACION y los puntos los otorga
+        // validarReporte() cuando el MOD aprueba).
+        if (request.getEstado() == EstadoReporte.RESUELTO && rolUsuario == Rol.MOD
+                && reporte.getReportadoPor() != null) {
+            otorgarPuntosPorValidacion(reporte);
         }
 
         return mapearADTO(actualizado);
@@ -223,34 +249,115 @@ public class ReporteServiceImpl implements IReporteService {
         Reporte reporte = reporteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reporte no encontrado con id: " + id));
 
-        if (rolUsuario != Rol.MOD) {
-            throw new AccessForbiddenException("Solo un moderador puede escalar un reporte a un administrador");
-        }
-
-        validarPropiedad(reporte, rolUsuario);
+        validarPropiedad(reporte, rolUsuario, usuario);
 
         if (Boolean.TRUE.equals(reporte.getEscalado())) {
-            throw new OperacionInvalidaException("Este reporte ya fue escalado a un administrador");
+            throw new OperacionInvalidaException("Este reporte ya fue escalado a un nivel superior");
+        }
+
+        // Cadena de escalamiento: SOCIO -> MOD -> ADMIN.
+        if (rolUsuario == Rol.MOD) {
+            reporte.setAsignadoA(Rol.ADMIN);
+            // Un reporte escalado a administración pasa a ser prioritario.
+            reporte.setGravedad(Gravedad.CRITICA);
+        } else if (rolUsuario == Rol.SOCIO) {
+            reporte.setAsignadoA(Rol.MOD);
+        } else {
+            throw new AccessForbiddenException("No tienes permiso para escalar este reporte");
         }
 
         reporte.setEscalado(true);
         reporte.setFechaEscalado(LocalDateTime.now());
         reporte.setEscaladoPor(usuario);
         reporte.setMotivoEscalado(request.getMotivo());
-        reporte.setAsignadoA(Rol.ADMIN);
-        // Un reporte escalado pasa a ser prioritario en el dashboard del admin.
-        reporte.setGravedad(Gravedad.CRITICA);
         reporte.setFechaActualizacion(LocalDateTime.now());
 
         Reporte actualizado = reporteRepository.save(reporte);
         return mapearADTO(actualizado);
     }
 
-    // Verifica que un MOD solo actúe sobre reportes que le pertenecen a su cola.
+    @Override
+    public List<ReporteResponseDTO> listarPendientesValidacion() {
+        return reporteRepository.findByEstado(EstadoReporte.PENDIENTE_VALIDACION).stream()
+                .map(this::mapearADTO)
+                .toList();
+    }
+
+    @Override
+    public ReporteResponseDTO validarReporte(String id, ValidarReporteRequestDTO request, String usuario) {
+        Reporte reporte = reporteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reporte no encontrado con id: " + id));
+
+        if (reporte.getEstado() != EstadoReporte.PENDIENTE_VALIDACION) {
+            throw new OperacionInvalidaException("Este reporte no está pendiente de validación");
+        }
+
+        if (request.getObservacion() != null && !request.getObservacion().isBlank()) {
+            if (reporte.getBitacora() == null) {
+                reporte.setBitacora(new ArrayList<>());
+            }
+            reporte.getBitacora().add(Reporte.Observacion.builder()
+                    .autor(usuario)
+                    .texto(request.getObservacion())
+                    .fecha(LocalDateTime.now())
+                    .build());
+        }
+
+        if (Boolean.TRUE.equals(request.getAprobado())) {
+            reporte.setEstado(EstadoReporte.RESUELTO);
+        } else {
+            // Rechazada: vuelve a la cola de quien la propuso para que la revise.
+            reporte.setEstado(EstadoReporte.EN_REVISION);
+            reporte.setResueltoPor(null);
+        }
+
+        reporte.setActualizadoPor(usuario);
+        reporte.setFechaActualizacion(LocalDateTime.now());
+
+        Reporte actualizado = reporteRepository.save(reporte);
+
+        if (Boolean.TRUE.equals(request.getAprobado()) && reporte.getReportadoPor() != null) {
+            try {
+                notificacionService.notificarSistema(reporte.getReportadoPor(),
+                        "Tu reporte fue resuelto",
+                        "El reporte " + reporte.getNumeroTicket()
+                                + " fue validado por un moderador y quedó marcado como resuelto.");
+            } catch (Exception e) {
+                log.error("No se pudo notificar la resolución del reporte {}: {}", id, e.getMessage());
+            }
+            otorgarPuntosPorValidacion(reporte);
+        }
+
+        return mapearADTO(actualizado);
+    }
+
+    // Verifica que un MOD solo actúe sobre reportes que le pertenecen a su cola,
+    // y que un SOCIO solo actúe sobre reportes de sus propios locales.
     // ADMIN tiene permiso sobre cualquier reporte (oversight).
-    private void validarPropiedad(Reporte reporte, Rol rolUsuario) {
+    private void validarPropiedad(Reporte reporte, Rol rolUsuario, String usuario) {
         if (rolUsuario == Rol.MOD && reporte.getAsignadoA() != Rol.MOD) {
             throw new AccessForbiddenException("Este reporte no está asignado a moderación");
+        }
+        if (rolUsuario == Rol.SOCIO && !esLocalDelSocio(reporte, usuario)) {
+            throw new AccessForbiddenException("Este reporte no pertenece a uno de tus locales");
+        }
+    }
+
+    private boolean esLocalDelSocio(Reporte reporte, String usuario) {
+        if (reporte.getSpotId() == null) {
+            return false;
+        }
+        return spotRepository.findById(reporte.getSpotId())
+                .map(spot -> usuario != null && usuario.equalsIgnoreCase(spot.getCreadorUsername()))
+                .orElse(false);
+    }
+
+    private void otorgarPuntosPorValidacion(Reporte reporte) {
+        try {
+            puntosService.sumarPuntos(reporte.getReportadoPor(),
+                    com.photobogota.api.model.TipoPuntos.REPORTE_VALIDADO, reporte.getId());
+        } catch (Exception e) {
+            log.error("No se pudo otorgar puntos por reporte validado {}: {}", reporte.getId(), e.getMessage());
         }
     }
 
@@ -367,6 +474,7 @@ public class ReporteServiceImpl implements IReporteService {
                 .escaladoPor(reporte.getEscaladoPor())
                 .motivoEscalado(reporte.getMotivoEscalado())
                 .actualizadoPor(reporte.getActualizadoPor())
+                .resueltoPor(reporte.getResueltoPor())
                 .estado(reporte.getEstado())
                 .fechaCreacion(reporte.getFechaCreacion())
                 .fechaActualizacion(reporte.getFechaActualizacion())

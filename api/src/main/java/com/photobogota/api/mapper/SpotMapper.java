@@ -17,6 +17,8 @@ public interface SpotMapper {
     @Mapping(target = "imagen", expression = "java(spot.getImagenes().isEmpty() ? null : spot.getImagenes().get(0))")
     @Mapping(target = "usuarioId", source = "creadorUsername")
     @Mapping(target = "rol", source = "creadorRol")
+    @Mapping(target = "tipo", expression = "java(normalizarTipo(spot))")
+    @Mapping(target = "tienePromocion", expression = "java(false)")
     @Mapping(target = "createdAt", source = "creadoEn")
     @Mapping(target = "creador", expression = "java(toCreadorDTO(spot))")
     SpotResumenDTO toResumen(Spot spot);
@@ -29,9 +31,21 @@ public interface SpotMapper {
     @Mapping(target = "resenas", source = "resenas")
     @Mapping(target = "usuarioId", source = "creadorUsername")
     @Mapping(target = "rol", source = "creadorRol")
+    @Mapping(target = "tipo", expression = "java(normalizarTipo(spot))")
+    @Mapping(target = "tienePromocion", expression = "java(false)")
     @Mapping(target = "createdAt", source = "creadoEn")
     @Mapping(target = "creador", expression = "java(toCreadorDTO(spot))")
     SpotResponseDTO toResponse(Spot spot);
+
+    // Normaliza el tipo para los spots antiguos que no traen el campo:
+    // un spot creado por un SOCIO es un local comercial; el resto es SPOT.
+    default String normalizarTipo(Spot spot) {
+        if (spot == null) return "SPOT";
+        if (spot.getTipo() != null && !spot.getTipo().isBlank()) {
+            return spot.getTipo();
+        }
+        return "SOCIO".equals(spot.getCreadorRol()) ? "LOCAL" : "SPOT";
+    }
 
     // Construye el objeto anidado "creador" ({ nombreUsuario, rol }) a partir de los
     // campos planos del Spot, para que el front no dependa de un id opaco (usuarioId)
