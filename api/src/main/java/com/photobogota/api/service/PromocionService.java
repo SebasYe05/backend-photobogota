@@ -124,6 +124,20 @@ public class PromocionService {
     }
 
     /**
+     * Promoción actualmente vigente y activa de un local (la que ve el público
+     * al entrar a la página del local). Devuelve la más reciente si hay varias.
+     */
+    public PromocionResponseDTO obtenerActivaDeSpot(String spotId) {
+        return promocionRepository.findBySpotId(spotId).stream()
+                .filter(p -> Boolean.TRUE.equals(p.getActivo()))
+                .filter(this::estaVigente)
+                .max((a, b) -> a.getFechaInicio().compareTo(b.getFechaInicio()))
+                .map(promocionMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Este local no tiene una promoción activa en este momento"));
+    }
+
+    /**
      * Promociones visibles al público: activas y dentro del rango de fechas.
      * Usado por el mapa para saber qué locales tienen promoción vigente.
      */

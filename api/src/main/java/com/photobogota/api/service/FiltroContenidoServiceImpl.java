@@ -314,29 +314,35 @@ public class FiltroContenidoServiceImpl implements IFiltroContenidoService {
         Usuario usuario = obtenerUsuario(nombreUsuario);
         Sancion sancion = usuario.getSancion();
 
-        if (sancion == null || sancion.getTipo() != TipoSancion.BAN) {
-            throw new OperacionInvalidaException("Solo puedes apelar si tienes una suspensión indefinida activa");
+        if (sancion == null || !esSancionApelable(sancion.getTipo())) {
+            throw new OperacionInvalidaException("Solo puedes apelar si tienes una sanción activa (mute, suspensión o suspensión indefinida)");
         }
 
-        RegistroModeracion registroBan = ultimoRegistroBanSinApelacion(usuario.getId().toHexString());
-        if (registroBan == null) {
-            throw new OperacionInvalidaException("No hay una suspensión pendiente de apelar");
+        RegistroModeracion registroSancion = ultimoRegistroSancionSinApelacion(usuario.getId().toHexString());
+        if (registroSancion == null) {
+            throw new OperacionInvalidaException("No hay una sanción pendiente de apelar");
         }
 
-        registroBan.setEstadoApelacion(EstadoApelacion.PENDIENTE);
-        registroBan.setMotivoApelacion(motivo);
-        registroBan.setFechaApelacion(LocalDateTime.now());
-        registroModeracionRepository.save(registroBan);
+        registroSancion.setEstadoApelacion(EstadoApelacion.PENDIENTE);
+        registroSancion.setMotivoApelacion(motivo);
+        registroSancion.setFechaApelacion(LocalDateTime.now());
+        registroModeracionRepository.save(registroSancion);
 
         registrar(usuario.getId().toHexString(), nombreUsuario, AccionModeracion.DETECCION, null, null, List.of(),
-                "El usuario envió una apelación de su suspensión indefinida. Motivo: " + motivo, nombreUsuario, null);
+                "El usuario envió una apelación de su sanción. Motivo: " + motivo, nombreUsuario, null);
     }
 
-    private RegistroModeracion ultimoRegistroBanSinApelacion(String usuarioId) {
+    private boolean esSancionApelable(TipoSancion tipo) {
+        return tipo == TipoSancion.MUTE || tipo == TipoSancion.SUSPENSION || tipo == TipoSancion.BAN;
+    }
+
+    private RegistroModeracion ultimoRegistroSancionSinApelacion(String usuarioId) {
         List<RegistroModeracion> registros = registroModeracionRepository
                 .findByUsuarioIdOrderByFechaDesc(usuarioId);
         return registros.stream()
-                .filter(r -> r.getAccion() == AccionModeracion.BAN)
+                .filter(r -> r.getAccion() == AccionModeracion.MUTE
+                        || r.getAccion() == AccionModeracion.SUSPENSION
+                        || r.getAccion() == AccionModeracion.BAN)
                 .filter(r -> r.getEstadoApelacion() == null || r.getEstadoApelacion() == EstadoApelacion.PENDIENTE)
                 .findFirst()
                 .orElse(null);
@@ -438,7 +444,9 @@ public class FiltroContenidoServiceImpl implements IFiltroContenidoService {
     @Override
     public List<RegistroModeracionDTO> listarApelacionesPendientes() {
         return registroModeracionRepository
-                .findByAccionAndEstadoApelacionOrderByFechaDesc(AccionModeracion.BAN, EstadoApelacion.PENDIENTE)
+                .findByAccionInAndEstadoApelacionOrderByFechaDesc(
+                        List.of(AccionModeracion.MUTE, AccionModeracion.SUSPENSION, AccionModeracion.BAN),
+                        EstadoApelacion.PENDIENTE)
                 .stream()
                 .map(this::mapearRegistroADTO)
                 .toList();
@@ -452,8 +460,10 @@ public class FiltroContenidoServiceImpl implements IFiltroContenidoService {
         RegistroModeracion registro = registroModeracionRepository.findById(registroId)
                 .orElseThrow(() -> new ResourceNotFoundException("Registro de moderación no encontrado"));
 
-        if (registro.getAccion() != AccionModeracion.BAN
-                || registro.getEstadoApelacion() != EstadoApelacion.PENDIENTE) {
+        boolean accionApelable = registro.getAccion() == AccionModeracion.MUTE
+                || registro.getAccion() == AccionModeracion.SUSPENSION
+                || registro.getAccion() == AccionModeracion.BAN;
+        if (!accionApelable || registro.getEstadoApelacion() != EstadoApelacion.PENDIENTE) {
             throw new OperacionInvalidaException("Este registro no tiene una apelación pendiente");
         }
 
@@ -472,17 +482,17 @@ public class FiltroContenidoServiceImpl implements IFiltroContenidoService {
             usuarioRepository.save(usuario);
             registrar(registro.getUsuarioId(), registro.getNombreUsuario(), AccionModeracion.BAN_REVOCADO, null, null,
                     List.of(),
-                    "Apelación aprobada: la suspensión indefinida fue levantada por " + adminUsername, adminUsername,
+                    "Apelación aprobada: la sanción fue levantada por " + adminUsername, adminUsername,
                     null);
             notificacionService.notificarSistema(registro.getNombreUsuario(), "Apelación aprobada",
-                    "Tu suspensión fue levantada. Respuesta: " + request.getRespuesta());
+                    "Tu sanción fue levantada. Respuesta: " + request.getRespuesta());
         } else {
             registrar(registro.getUsuarioId(), registro.getNombreUsuario(), AccionModeracion.APELACION_RECHAZADA, null,
                     null, List.of(),
                     "Apelación rechazada por " + adminUsername + ". Respuesta: " + request.getRespuesta(),
                     adminUsername, null);
             notificacionService.notificarSistema(registro.getNombreUsuario(), "Apelación rechazada",
-                    "Tu suspensión se mantiene. Respuesta: " + request.getRespuesta());
+                    "Tu sanción se mantiene. Respuesta: " + request.getRespuesta());
         }
 
         return mapearRegistroADTO(registro);
@@ -533,7 +543,7 @@ public class FiltroContenidoServiceImpl implements IFiltroContenidoService {
         boolean bloquea = !expirada && (sancion.getTipo() == TipoSancion.MUTE
                 || sancion.getTipo() == TipoSancion.SUSPENSION
                 || sancion.getTipo() == TipoSancion.BAN);
-        boolean puedeApelar = !expirada && sancion.getTipo() == TipoSancion.BAN;
+        boolean puedeApelar = !expirada && esSancionApelable(sancion.getTipo());
 
         return SancionDTO.builder()
                 .tipo(expirada ? null : sancion.getTipo())

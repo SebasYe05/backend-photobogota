@@ -58,6 +58,16 @@ public class PromocionController {
         return ResponseEntity.ok(promocionService.listarDeSpot(spotId));
     }
 
+    @Operation(summary = "Obtener la promoción activa de un local", description = "Devuelve la promoción vigente y activa del local. 404 si no hay ninguna en este momento. Público, lo usa la página del local.", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Promoción activa"),
+            @ApiResponse(responseCode = "404", description = "El local no tiene promoción activa")
+    })
+    @GetMapping("/spot/{spotId}/activa")
+    public ResponseEntity<PromocionResponseDTO> obtenerActivaDeSpot(@PathVariable String spotId) {
+        return ResponseEntity.ok(promocionService.obtenerActivaDeSpot(spotId));
+    }
+
     @Operation(summary = "Obtener detalle de una promoción", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Detalle de la promoción"),

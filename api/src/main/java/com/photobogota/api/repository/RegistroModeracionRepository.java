@@ -14,4 +14,7 @@ public interface RegistroModeracionRepository extends MongoRepository<RegistroMo
 
     List<RegistroModeracion> findByAccionAndEstadoApelacionOrderByFechaDesc(AccionModeracion accion,
             EstadoApelacion estadoApelacion);
+
+    List<RegistroModeracion> findByAccionInAndEstadoApelacionOrderByFechaDesc(List<AccionModeracion> accions,
+            EstadoApelacion estadoApelacion);
 }
