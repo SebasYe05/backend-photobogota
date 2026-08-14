@@ -9,7 +9,6 @@ import com.photobogota.api.model.Spot;
 import com.photobogota.api.model.TipoContenidoModerado;
 import com.photobogota.api.repository.CalificacionRepository;
 import com.photobogota.api.repository.SpotRepository;
-import com.photobogota.api.service.IPuntosService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

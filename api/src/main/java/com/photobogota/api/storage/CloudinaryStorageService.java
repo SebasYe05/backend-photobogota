@@ -29,13 +29,14 @@ public class CloudinaryStorageService implements StorageService {
                     ObjectUtils.asMap(
                             "folder", "photobogota/" + carpeta,
                             "resource_type", "auto",
-                            "fetch_format", "webp",
-                            "width", 1280,
-                            "crop", "scale"
-                    ));
+                            "format", "webp",
+                            "width", 1600,
+                            "crop", "limit",
+                            "quality", "auto"));
 
             Object url = resultado.get("secure_url");
-            if (url == null) url = resultado.get("url");
+            if (url == null)
+                url = resultado.get("url");
             return String.valueOf(url);
 
         } catch (IOException e) {
@@ -56,7 +57,8 @@ public class CloudinaryStorageService implements StorageService {
     }
 
     private String extraerPublicId(String urlArchivo) {
-        if (urlArchivo == null || !urlArchivo.contains("/upload/")) return null;
+        if (urlArchivo == null || !urlArchivo.contains("/upload/"))
+            return null;
         String resto = urlArchivo.substring(urlArchivo.indexOf("/upload/") + "/upload/".length());
         if (resto.matches("v\\d+/.*")) {
             resto = resto.substring(resto.indexOf('/') + 1);
