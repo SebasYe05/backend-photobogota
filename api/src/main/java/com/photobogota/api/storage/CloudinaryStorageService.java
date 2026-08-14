@@ -1,6 +1,7 @@
 package com.photobogota.api.storage;
 
 import com.cloudinary.Cloudinary;
+import com.cloudinary.transformation.Transformation;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -10,12 +11,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Map;
 
-/**
- * Almacena los archivos en Cloudinary (plan gratuito).
- * Se activa solo si la propiedad {@code cloudinary.url} (variable CLOUDINARY_URL) está definida;
- * si no, entra en juego {@link LocalStorageService} como respaldo.
- * URL devuelta: https://res.cloudinary.com/<cloud_name>/<tipo>/upload/v<version>/<public_id>.<ext>
- */
 @Service
 @ConditionalOnExpression("'${cloudinary.url:}' != ''")
 public class CloudinaryStorageService implements StorageService {
@@ -34,11 +29,20 @@ public class CloudinaryStorageService implements StorageService {
                     archivo.getBytes(),
                     ObjectUtils.asMap(
                             "folder", "photobogota/" + carpeta,
-                            "resource_type", "auto"
+                            "resource_type", "auto",
+                            
+                            // TRANSFORMACIONES AUTOMÁTICAS:
+                            // 1. Convertir a formato WebP
+                            "fetch_format", "webp",
+                            // 2. Redimensionar a 1280px de ancho manteniendo la proporción
+                            "width", 1280,
+                            "crop", "scale"
                     ));
+
             Object url = resultado.get("secure_url");
             if (url == null) url = resultado.get("url");
             return String.valueOf(url);
+
         } catch (IOException e) {
             throw new RuntimeException("Error al subir archivo a Cloudinary", e);
         }
@@ -56,10 +60,6 @@ public class CloudinaryStorageService implements StorageService {
         }
     }
 
-    /**
-     * Extrae el public_id de una URL de Cloudinary:
-     * ".../image/upload/v1234/photobogota/spots/abc123.jpg" -> "photobogota/spots/abc123"
-     */
     private String extraerPublicId(String urlArchivo) {
         if (urlArchivo == null || !urlArchivo.contains("/upload/")) return null;
         String resto = urlArchivo.substring(urlArchivo.indexOf("/upload/") + "/upload/".length());
