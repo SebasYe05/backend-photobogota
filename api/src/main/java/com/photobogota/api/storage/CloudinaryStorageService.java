@@ -1,7 +1,6 @@
 package com.photobogota.api.storage;
 
 import com.cloudinary.Cloudinary;
-import com.cloudinary.transformation.Transformation;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -30,11 +29,7 @@ public class CloudinaryStorageService implements StorageService {
                     ObjectUtils.asMap(
                             "folder", "photobogota/" + carpeta,
                             "resource_type", "auto",
-                            
-                            // TRANSFORMACIONES AUTOMÁTICAS:
-                            // 1. Convertir a formato WebP
                             "fetch_format", "webp",
-                            // 2. Redimensionar a 1280px de ancho manteniendo la proporción
                             "width", 1280,
                             "crop", "scale"
                     ));
