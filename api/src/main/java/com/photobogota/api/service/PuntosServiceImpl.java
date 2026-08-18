@@ -147,10 +147,14 @@ public class PuntosServiceImpl implements IPuntosService {
         long umbralSiguienteNivel = obtenerUmbralNivel(nivel + 1);
         long puntosParaSiguiente = Math.max(0, umbralSiguienteNivel - puntos);
 
-        // Progreso dentro del tramo del nivel actual: [umbralNivelActual, umbralSiguienteNivel).
-        // Antes había un caso especial para nivel == 1 que dividía por umbralNivelActual
-        // (que para nivel 1 siempre es 0, por definición de obtenerUmbralNivel), así que
-        // esa rama devolvía 0 SIEMPRE sin importar los puntos reales: root cause del bug
+        // Progreso dentro del tramo del nivel actual: [umbralNivelActual,
+        // umbralSiguienteNivel).
+        // Antes había un caso especial para nivel == 1 que dividía por
+        // umbralNivelActual
+        // (que para nivel 1 siempre es 0, por definición de obtenerUmbralNivel), así
+        // que
+        // esa rama devolvía 0 SIEMPRE sin importar los puntos reales: root cause del
+        // bug
         // reportado por QA (10 puntos -> progresoPercent 0 en vez de ~10). La fórmula
         // general de abajo ya es correcta también para nivel 1 (umbralNivelActual = 0),
         // así que se eliminó el caso especial.
@@ -308,7 +312,7 @@ public class PuntosServiceImpl implements IPuntosService {
         String timezone = "America/Bogota";
         try {
             timezone = puntosConfigRepository.findById("puntos.timezone")
-                    .map(PuntosConfig::getValor)
+                    .map(config -> config.getValor()) // Lambda simple
                     .orElse("America/Bogota");
         } catch (Exception e) {
             log.warn("Error al leer timezone de puntos, usando default {}", TZ_DEFAULT);

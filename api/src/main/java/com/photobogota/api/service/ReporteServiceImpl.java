@@ -152,7 +152,7 @@ public class ReporteServiceImpl implements IReporteService {
         if (rolUsuario == Rol.SOCIO) {
             // Un SOCIO atiende los reportes sobre SUS propios locales.
             List<String> misSpotIds = spotRepository.findByCreadorUsername(username).stream()
-                    .map(Spot::getId)
+                    .map(spot -> spot.getId())
                     .toList();
             if (misSpotIds.isEmpty()) {
                 return List.of();

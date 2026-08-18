@@ -11,6 +11,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.UUID;
 
 /**
  * Servicio para manejar operaciones con JWT (JSON Web Tokens)
@@ -115,6 +116,7 @@ public class JwtService {
      */
     private String construirToken(Map<String, Object> extraClaims, String subject, long expiracion) {
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .claims(extraClaims)
                 .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))

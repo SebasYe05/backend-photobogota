@@ -31,268 +31,281 @@ import java.util.Map;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    // 1. Errores de validación (campos vacíos, formatos incorrectos)
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(
-            MethodArgumentNotValidException ex, HttpServletRequest request) {
+        // 1. Errores de validación (campos vacíos, formatos incorrectos)
+        @ExceptionHandler(MethodArgumentNotValidException.class)
+        public ResponseEntity<Map<String, Object>> handleValidationErrors(
+                        MethodArgumentNotValidException ex, HttpServletRequest request) {
 
-        log.warn("Error de validación en petición: {}", ex.getBindingResult().getObjectName());
+                log.warn("Error de validación en petición: {}", ex.getBindingResult().getObjectName());
 
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors()
-                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+                Map<String, String> errors = new HashMap<>();
+                ex.getBindingResult().getFieldErrors()
+                                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
 
-        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, null, request);
-        body.put("errors", errors);
+                Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, null, request);
+                body.put("errors", errors);
 
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
-
-    // 2. Conflictos de unicidad (email, username, duplicados en DB)
-    @ExceptionHandler({ ResourceAlreadyExistsException.class, DuplicateKeyException.class })
-    public ResponseEntity<Map<String, Object>> handleConflicts(
-            Exception ex, HttpServletRequest request) {
-
-        log.warn("Conflicto de datos detectado: {}", ex.getMessage());
-
-        String message = ex instanceof DuplicateKeyException
-                ? "El correo o nombre de usuario ya existe en PhotoBogota"
-                : ex.getMessage();
-
-        Map<String, Object> body = buildBody(HttpStatus.CONFLICT, message, request);
-        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
-    }
-
-    // 2.1 Método HTTP no soportado (405)
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<Map<String, Object>> handleMethodNotSupported(
-            HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
-
-        log.warn("Método HTTP no soportado en {}: {}", request.getRequestURI(), ex.getMessage());
-
-        Map<String, Object> body = buildBody(
-                HttpStatus.METHOD_NOT_ALLOWED,
-                "El método " + ex.getMethod() + " no está soportado para esta ruta. Métodos permitidos: "
-                        + ex.getSupportedMethods(),
-                request);
-
-        return new ResponseEntity<>(body, HttpStatus.METHOD_NOT_ALLOWED);
-    }
-
-    // 3. Credenciales inválidas (401)
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(
-            InvalidCredentialsException ex, HttpServletRequest request) {
-
-        log.warn("Credenciales inválidas en {}: {}", request.getRequestURI(), ex.getMessage());
-
-        Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
-        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
-    }
-
-    // 3.1 Error en cambio de contraseña (400)
-    @ExceptionHandler(CambioContrasenaException.class)
-    public ResponseEntity<Map<String, Object>> handleCambioContrasena(
-            CambioContrasenaException ex, HttpServletRequest request) {
-
-        log.warn("Error en cambio de contraseña en {}: {}", request.getRequestURI(), ex.getMessage());
-
-        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
-
-    // 4. Acceso denegado (403)
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDenied(
-            AccessDeniedException ex, HttpServletRequest request) {
-
-        log.error("Intento de acceso no autorizado a {}: {}", request.getRequestURI(), ex.getMessage());
-
-        Map<String, Object> body = buildBody(
-                HttpStatus.FORBIDDEN, "No tienes permiso para acceder a este recurso", request);
-        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
-    }
-
-    // 4.1 Acceso denegado por reglas de negocio (403), ej: reportar tu propia reseña
-    @ExceptionHandler(AccessForbiddenException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessForbidden(
-            AccessForbiddenException ex, HttpServletRequest request) {
-
-        log.warn("Acceso prohibido por regla de negocio en {}: {}", request.getRequestURI(), ex.getMessage());
-
-        Map<String, Object> body = buildBody(HttpStatus.FORBIDDEN, ex.getMessage(), request);
-        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
-    }
-
-    // 4.2 Operación inválida dado el estado actual del recurso (400)
-    @ExceptionHandler(OperacionInvalidaException.class)
-    public ResponseEntity<Map<String, Object>> handleOperacionInvalida(
-            OperacionInvalidaException ex, HttpServletRequest request) {
-
-        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
-
-    // 4.3 Contenido rechazado por el filtro automático o usuario sancionado.
-    // La primera infracción (NOTIFICACION) o una palabra nueva detectada → 400;
-    // si el usuario YA tiene una sanción activa que bloquea publicación → 403.
-    // Se devuelven los datos estructurados para que el frontend muestre el
-    // castigo aplicado y permita apelar al usuario.
-    @ExceptionHandler(ContenidoInapropiadoException.class)
-    public ResponseEntity<Map<String, Object>> handleContenidoInapropiado(
-            ContenidoInapropiadoException ex, HttpServletRequest request) {
-
-        boolean yaSancionado = ex.getPalabrasDetectadas() == null
-                || ex.getPalabrasDetectadas().isEmpty();
-        HttpStatus status = yaSancionado ? HttpStatus.FORBIDDEN : HttpStatus.BAD_REQUEST;
-
-        log.warn("Contenido rechazado en {}: {} (sancion={})",
-                request.getRequestURI(), ex.getMessage(), ex.getSancionAplicada());
-
-        Map<String, Object> body = buildBody(status, ex.getMessage(), request);
-        body.put("tipo", ex.getSancionAplicada() != null ? ex.getSancionAplicada().name() : null);
-        body.put("palabrasDetectadas", ex.getPalabrasDetectadas());
-        body.put("contadorInfracciones", ex.getContadorInfracciones());
-        if (ex.getFechaExpiracionSancion() != null) {
-            body.put("fechaExpiracion", ex.getFechaExpiracionSancion().toString());
+                return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         }
 
-        return new ResponseEntity<>(body, status);
-    }
+        // 2. Conflictos de unicidad (email, username, duplicados en DB)
+        @ExceptionHandler({ ResourceAlreadyExistsException.class, DuplicateKeyException.class })
+        public ResponseEntity<Map<String, Object>> handleConflicts(
+                        Exception ex, HttpServletRequest request) {
 
-    // 3.1 No autorizado personalizado (401)
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<Map<String, Object>> handleUnauthorized(
-            UnauthorizedException ex, HttpServletRequest request) {
+                log.warn("Conflicto de datos detectado: {}", ex.getMessage());
 
-        log.warn("No autorizado en {}: {}", request.getRequestURI(), ex.getMessage());
+                String message = "Conflicto con un recurso existente en el sistema";
 
-        Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
-        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
-    }
+                if (ex instanceof DuplicateKeyException) {
+                        String msg = ex.getMessage() != null ? ex.getMessage() : "";
+                        if (msg.contains("refresh_tokens") || msg.contains("sesiones")) {
+                                message = "Ya existe una sesión activa procesándose para este usuario";
+                        } else {
+                                message = "El correo o nombre de usuario ya existe en PhotoBogota";
+                        }
+                } else {
+                        message = ex.getMessage();
+                }
 
-    // 5. Cualquier otra excepción no manejada (500)
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGlobalException(
-            Exception ex, HttpServletRequest request) {
-
-        log.error("CRITICAL ERROR en {}", request.getRequestURI(), ex);
-
-        Map<String, Object> body = buildBody(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "Ocurrió un error inesperado. Por favor contacte al administrador.",
-                request);
-        body.put("error", "Internal Server Error");
-
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    // --- Utilidad para construir el body base ---
-    private Map<String, Object> buildBody(HttpStatus status, String message, HttpServletRequest request) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", status.value());
-        body.put("path", request.getRequestURI());
-        if (message != null) {
-            body.put("message", message);
+                Map<String, Object> body = buildBody(HttpStatus.CONFLICT, message, request);
+                return new ResponseEntity<>(body, HttpStatus.CONFLICT);
         }
-        return body;
-    }
 
-    // 6. Recurso no encontrado (404)
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<?> handleNotFound(ResourceNotFoundException ex, HttpServletRequest req) {
-        return new ResponseEntity<>(buildBody(HttpStatus.NOT_FOUND, ex.getMessage(), req), HttpStatus.NOT_FOUND);
-    }
+        // 2.1 Método HTTP no soportado (405)
+        @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+        public ResponseEntity<Map<String, Object>> handleMethodNotSupported(
+                        HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
 
-    // 7. Solicitud con cuerpo JSON inválido (400)
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, Object>> handleMessageNotReadable(
-            HttpMessageNotReadableException ex, HttpServletRequest request) {
+                log.warn("Método HTTP no soportado en {}: {}", request.getRequestURI(), ex.getMessage());
 
-        log.warn("JSON inválido en {}: {}", request.getRequestURI(), ex.getMessage());
+                Map<String, Object> body = buildBody(
+                                HttpStatus.METHOD_NOT_ALLOWED,
+                                "El método " + ex.getMethod()
+                                                + " no está soportado para esta ruta. Métodos permitidos: "
+                                                + ex.getSupportedMethods(),
+                                request);
 
-        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST,
-                "El cuerpo de la solicitud es inválido o tiene un formato incorrecto", request);
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
+                return new ResponseEntity<>(body, HttpStatus.METHOD_NOT_ALLOWED);
+        }
 
-    // 8. Parámetros requeridos faltantes (400)
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<Map<String, Object>> handleMissingParams(
-            MissingServletRequestParameterException ex, HttpServletRequest request) {
+        // 3. Credenciales inválidas (401)
+        @ExceptionHandler(InvalidCredentialsException.class)
+        public ResponseEntity<Map<String, Object>> handleInvalidCredentials(
+                        InvalidCredentialsException ex, HttpServletRequest request) {
 
-        log.warn("Parámetro requerido faltante en {}: {}", request.getRequestURI(), ex.getParameterName());
+                log.warn("Credenciales inválidas en {}: {}", request.getRequestURI(), ex.getMessage());
 
-        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST,
-                "El parámetro '" + ex.getParameterName() + "' es requerido", request);
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
+                Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+                return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
+        }
 
-    // 9. Violación de restricciones de validación (400)
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Map<String, Object>> handleConstraintViolation(
-            ConstraintViolationException ex, HttpServletRequest request) {
+        // 3.1 Error en cambio de contraseña (400)
+        @ExceptionHandler(CambioContrasenaException.class)
+        public ResponseEntity<Map<String, Object>> handleCambioContrasena(
+                        CambioContrasenaException ex, HttpServletRequest request) {
 
-        log.warn("Violación de restricciones en {}: {}", request.getRequestURI(), ex.getMessage());
+                log.warn("Error en cambio de contraseña en {}: {}", request.getRequestURI(), ex.getMessage());
 
-        Map<String, String> errors = new HashMap<>();
-        ex.getConstraintViolations()
-                .forEach(violation -> errors.put(violation.getPropertyPath().toString(), violation.getMessage()));
+                Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+                return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        }
 
-        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, "Error de validación", request);
-        body.put("errors", errors);
+        // 4. Acceso denegado (403)
+        @ExceptionHandler(AccessDeniedException.class)
+        public ResponseEntity<Map<String, Object>> handleAccessDenied(
+                        AccessDeniedException ex, HttpServletRequest request) {
 
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
+                log.error("Intento de acceso no autorizado a {}: {}", request.getRequestURI(), ex.getMessage());
 
-    // 10. Tipo de contenido no soportado (415)
-    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<Map<String, Object>> handleMediaTypeNotSupported(
-            HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+                Map<String, Object> body = buildBody(
+                                HttpStatus.FORBIDDEN, "No tienes permiso para acceder a este recurso", request);
+                return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+        }
 
-        log.warn("Content-Type no soportado en {}: {}", request.getRequestURI(), ex.getContentType());
+        // 4.1 Acceso denegado por reglas de negocio (403), ej: reportar tu propia
+        // reseña
+        @ExceptionHandler(AccessForbiddenException.class)
+        public ResponseEntity<Map<String, Object>> handleAccessForbidden(
+                        AccessForbiddenException ex, HttpServletRequest request) {
 
-        Map<String, Object> body = buildBody(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-                "El tipo de contenido " + ex.getContentType() + " no está soportado. Tipos permitidos: "
-                        + ex.getSupportedMediaTypes(),
-                request);
-        return new ResponseEntity<>(body, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-    }
+                log.warn("Acceso prohibido por regla de negocio en {}: {}", request.getRequestURI(), ex.getMessage());
 
-    // 11. Solicitud incorrecta (400)
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<Map<String, Object>> handleBadRequest(
-            BadRequestException ex, HttpServletRequest request) {
+                Map<String, Object> body = buildBody(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+                return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+        }
 
-        log.warn("Solicitud incorrecta en {}: {}", request.getRequestURI(), ex.getMessage());
+        // 4.2 Operación inválida dado el estado actual del recurso (400)
+        @ExceptionHandler(OperacionInvalidaException.class)
+        public ResponseEntity<Map<String, Object>> handleOperacionInvalida(
+                        OperacionInvalidaException ex, HttpServletRequest request) {
 
-        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
+                Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+                return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        }
 
-    // 12. Token JWT expirado (401)
-    @ExceptionHandler(ExpiredJwtException.class)
-    public ResponseEntity<Map<String, Object>> handleExpiredJwt(
-            ExpiredJwtException ex, HttpServletRequest request) {
+        // 4.3 Contenido rechazado por el filtro automático o usuario sancionado.
+        // La primera infracción (NOTIFICACION) o una palabra nueva detectada → 400;
+        // si el usuario YA tiene una sanción activa que bloquea publicación → 403.
+        // Se devuelven los datos estructurados para que el frontend muestre el
+        // castigo aplicado y permita apelar al usuario.
+        @ExceptionHandler(ContenidoInapropiadoException.class)
+        public ResponseEntity<Map<String, Object>> handleContenidoInapropiado(
+                        ContenidoInapropiadoException ex, HttpServletRequest request) {
 
-        log.warn("Token JWT expirado en {}: {}", request.getRequestURI(), ex.getMessage());
+                boolean yaSancionado = ex.getPalabrasDetectadas() == null
+                                || ex.getPalabrasDetectadas().isEmpty();
+                HttpStatus status = yaSancionado ? HttpStatus.FORBIDDEN : HttpStatus.BAD_REQUEST;
 
-        Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED,
-                "El token de autenticación ha expirado. Por favor inicie sesión nuevamente.", request);
-        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
-    }
+                log.warn("Contenido rechazado en {}: {} (sancion={})",
+                                request.getRequestURI(), ex.getMessage(), ex.getSancionAplicada());
 
-    // 12.1. Token JWT inválido (401)
-    @ExceptionHandler({ MalformedJwtException.class, SignatureException.class })
-    public ResponseEntity<Map<String, Object>> handleInvalidJwt(
-            Exception ex, HttpServletRequest request) {
+                Map<String, Object> body = buildBody(status, ex.getMessage(), request);
+                body.put("tipo", ex.getSancionAplicada() != null ? ex.getSancionAplicada().name() : null);
+                body.put("palabrasDetectadas", ex.getPalabrasDetectadas());
+                body.put("contadorInfracciones", ex.getContadorInfracciones());
+                if (ex.getFechaExpiracionSancion() != null) {
+                        body.put("fechaExpiracion", ex.getFechaExpiracionSancion().toString());
+                }
 
-        log.warn("Token JWT inválido en {}: {}", request.getRequestURI(), ex.getMessage());
+                return new ResponseEntity<>(body, status);
+        }
 
-        Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED,
-                "Token de autenticación inválido", request);
-        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
-    }
+        // 3.1 No autorizado personalizado (401)
+        @ExceptionHandler(UnauthorizedException.class)
+        public ResponseEntity<Map<String, Object>> handleUnauthorized(
+                        UnauthorizedException ex, HttpServletRequest request) {
+
+                log.warn("No autorizado en {}: {}", request.getRequestURI(), ex.getMessage());
+
+                Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+                return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
+        }
+
+        // 5. Cualquier otra excepción no manejada (500)
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<Map<String, Object>> handleGlobalException(
+                        Exception ex, HttpServletRequest request) {
+
+                log.error("CRITICAL ERROR en {}", request.getRequestURI(), ex);
+
+                Map<String, Object> body = buildBody(
+                                HttpStatus.INTERNAL_SERVER_ERROR,
+                                "Ocurrió un error inesperado. Por favor contacte al administrador.",
+                                request);
+                body.put("error", "Internal Server Error");
+
+                return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        // --- Utilidad para construir el body base ---
+        private Map<String, Object> buildBody(HttpStatus status, String message, HttpServletRequest request) {
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("timestamp", LocalDateTime.now());
+                body.put("status", status.value());
+                body.put("path", request.getRequestURI());
+                if (message != null) {
+                        body.put("message", message);
+                }
+                return body;
+        }
+
+        // 6. Recurso no encontrado (404)
+        @ExceptionHandler(ResourceNotFoundException.class)
+        public ResponseEntity<?> handleNotFound(ResourceNotFoundException ex, HttpServletRequest req) {
+                return new ResponseEntity<>(buildBody(HttpStatus.NOT_FOUND, ex.getMessage(), req),
+                                HttpStatus.NOT_FOUND);
+        }
+
+        // 7. Solicitud con cuerpo JSON inválido (400)
+        @ExceptionHandler(HttpMessageNotReadableException.class)
+        public ResponseEntity<Map<String, Object>> handleMessageNotReadable(
+                        HttpMessageNotReadableException ex, HttpServletRequest request) {
+
+                log.warn("JSON inválido en {}: {}", request.getRequestURI(), ex.getMessage());
+
+                Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST,
+                                "El cuerpo de la solicitud es inválido o tiene un formato incorrecto", request);
+                return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        }
+
+        // 8. Parámetros requeridos faltantes (400)
+        @ExceptionHandler(MissingServletRequestParameterException.class)
+        public ResponseEntity<Map<String, Object>> handleMissingParams(
+                        MissingServletRequestParameterException ex, HttpServletRequest request) {
+
+                log.warn("Parámetro requerido faltante en {}: {}", request.getRequestURI(), ex.getParameterName());
+
+                Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST,
+                                "El parámetro '" + ex.getParameterName() + "' es requerido", request);
+                return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        }
+
+        // 9. Violación de restricciones de validación (400)
+        @ExceptionHandler(ConstraintViolationException.class)
+        public ResponseEntity<Map<String, Object>> handleConstraintViolation(
+                        ConstraintViolationException ex, HttpServletRequest request) {
+
+                log.warn("Violación de restricciones en {}: {}", request.getRequestURI(), ex.getMessage());
+
+                Map<String, String> errors = new HashMap<>();
+                ex.getConstraintViolations()
+                                .forEach(violation -> errors.put(violation.getPropertyPath().toString(),
+                                                violation.getMessage()));
+
+                Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, "Error de validación", request);
+                body.put("errors", errors);
+
+                return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        }
+
+        // 10. Tipo de contenido no soportado (415)
+        @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+        public ResponseEntity<Map<String, Object>> handleMediaTypeNotSupported(
+                        HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+
+                log.warn("Content-Type no soportado en {}: {}", request.getRequestURI(), ex.getContentType());
+
+                Map<String, Object> body = buildBody(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                                "El tipo de contenido " + ex.getContentType() + " no está soportado. Tipos permitidos: "
+                                                + ex.getSupportedMediaTypes(),
+                                request);
+                return new ResponseEntity<>(body, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+        }
+
+        // 11. Solicitud incorrecta (400)
+        @ExceptionHandler(BadRequestException.class)
+        public ResponseEntity<Map<String, Object>> handleBadRequest(
+                        BadRequestException ex, HttpServletRequest request) {
+
+                log.warn("Solicitud incorrecta en {}: {}", request.getRequestURI(), ex.getMessage());
+
+                Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+                return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        }
+
+        // 12. Token JWT expirado (401)
+        @ExceptionHandler(ExpiredJwtException.class)
+        public ResponseEntity<Map<String, Object>> handleExpiredJwt(
+                        ExpiredJwtException ex, HttpServletRequest request) {
+
+                log.warn("Token JWT expirado en {}: {}", request.getRequestURI(), ex.getMessage());
+
+                Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED,
+                                "El token de autenticación ha expirado. Por favor inicie sesión nuevamente.", request);
+                return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
+        }
+
+        // 12.1. Token JWT inválido (401)
+        @ExceptionHandler({ MalformedJwtException.class, SignatureException.class })
+        public ResponseEntity<Map<String, Object>> handleInvalidJwt(
+                        Exception ex, HttpServletRequest request) {
+
+                log.warn("Token JWT inválido en {}: {}", request.getRequestURI(), ex.getMessage());
+
+                Map<String, Object> body = buildBody(HttpStatus.UNAUTHORIZED,
+                                "Token de autenticación inválido", request);
+                return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
+        }
 
 }
