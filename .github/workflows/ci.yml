@@ -52,7 +52,6 @@ jobs:
         mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.6.0.6792:sonar
         -Dsonar.projectKey=SebasYe05_backend-photobogota
         -Dsonar.organization=sebasye05
-        -DskipTests
         --file pom.xml
       working-directory: api
 
