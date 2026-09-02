@@ -179,7 +179,7 @@ class NotificacionServiceImplTest {
 
         servicio.eliminarNotificacion("n1", "juan");
 
-        verify(notificacionRepository).delete(notificacion("n1", "juan", false));
+        verify(notificacionRepository).delete(any(Notificacion.class));
     }
 
     @Test

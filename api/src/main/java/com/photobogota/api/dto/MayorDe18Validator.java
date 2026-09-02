@@ -9,7 +9,11 @@ public class MayorDe18Validator implements ConstraintValidator<MayorDe18, LocalD
 
     @Override
     public boolean isValid(LocalDate fechaNacimiento, ConstraintValidatorContext context) {
-        
+
+        if (fechaNacimiento == null) {
+            return true; // @NotNull se encarga de rechazar los null
+        }
+
         // Calculamos la diferencia en AÑOS entre la fecha de nacimiento y hoy
         long edad = ChronoUnit.YEARS.between(fechaNacimiento, LocalDate.now());
         
