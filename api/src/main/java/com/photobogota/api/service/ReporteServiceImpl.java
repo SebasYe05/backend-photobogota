@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -32,7 +30,6 @@ import com.photobogota.api.model.TipoObjetivoReporte;
 import com.photobogota.api.repository.CalificacionRepository;
 import com.photobogota.api.repository.ReporteRepository;
 import com.photobogota.api.repository.SpotRepository;
-import com.photobogota.api.service.IPuntosService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -155,7 +152,7 @@ public class ReporteServiceImpl implements IReporteService {
         if (rolUsuario == Rol.SOCIO) {
             // Un SOCIO atiende los reportes sobre SUS propios locales.
             List<String> misSpotIds = spotRepository.findByCreadorUsername(username).stream()
-                    .map(Spot::getId)
+                    .map(spot -> spot.getId())
                     .toList();
             if (misSpotIds.isEmpty()) {
                 return List.of();

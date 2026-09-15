@@ -150,8 +150,9 @@ public class PromocionService {
 
     public Set<String> obtenerSpotIdsConPromocionActiva() {
         return promocionRepository.findByActivoTrue().stream()
-                .filter(this::estaVigente)
-                .map(Promocion::getSpotId)
+                .filter(p -> p != null)
+                .filter(p -> estaVigente(p))
+                .map(p -> p.getSpotId()) 
                 .collect(Collectors.toSet());
     }
 

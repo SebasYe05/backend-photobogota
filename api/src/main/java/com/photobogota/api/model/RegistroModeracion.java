@@ -21,6 +21,7 @@ import lombok.experimental.FieldNameConstants;
 @Document(collection = "registros_moderacion")
 @FieldNameConstants
 public class RegistroModeracion {
+    public static final String FIELD_FECHA = "fecha";
 
     @Id
     private String id;

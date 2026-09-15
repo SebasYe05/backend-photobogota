@@ -6,6 +6,10 @@ import com.photobogota.api.model.Miembro;
 import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.Usuario;
 import com.photobogota.api.model.UsuarioAuth;
+import com.photobogota.api.mapper.SpotMapper;
+import com.photobogota.api.repository.CalificacionRepository;
+import com.photobogota.api.repository.GuardadoRepository;
+import com.photobogota.api.repository.SpotRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
 import com.photobogota.api.repository.UsuarioRepository;
 
@@ -54,6 +58,21 @@ class UsuarioServiceImplTest {
 
         @Mock
         private PasswordEncoder passwordEncoder; // Simula el encriptador de contraseñas
+
+        @Mock
+        private IFiltroContenidoService filtroContenidoService; // Simula el moderador de contenido
+
+        @Mock
+        private SpotRepository spotRepository; // Simula la BD de spots
+
+        @Mock
+        private CalificacionRepository calificacionRepository; // Simula la BD de calificaciones
+
+        @Mock
+        private GuardadoRepository guardadoRepository; // Simula la BD de guardados
+
+        @Mock
+        private SpotMapper spotMapper; // Simula el mapeador de spots
 
         // ============================================================
         // @InjectMocks — La clase bajo prueba (Subject Under Test)

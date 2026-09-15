@@ -27,6 +27,7 @@ import com.photobogota.api.dto.PalabraProhibidaDTO;
 import com.photobogota.api.dto.RegistroModeracionDTO;
 import com.photobogota.api.dto.ResolverApelacionRequestDTO;
 import com.photobogota.api.model.AccionModeracion;
+import com.photobogota.api.model.RegistroModeracion;
 import com.photobogota.api.model.TipoContenidoModerado;
 import com.photobogota.api.service.IFiltroContenidoService;
 import com.photobogota.api.utils.ApiConstants;
@@ -115,9 +116,12 @@ public class AdminModeracionController {
             @Parameter(description = "Hasta (ISO date-time)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta,
             @Parameter(description = "Número de página (inicia en 0)", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Cantidad de registros por página", example = "10") @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fecha"));
-        return ResponseEntity.ok(filtroContenidoService.listarHistorial(accion, usuario, tipoContenido, desde, hasta,
-                pageable));
+
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, RegistroModeracion.FIELD_FECHA));
+
+        return ResponseEntity.ok(filtroContenidoService.listarHistorial(
+                accion, usuario, tipoContenido, desde, hasta, pageable));
     }
 
     // ---- Apelaciones de bans ----
