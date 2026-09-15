@@ -126,9 +126,7 @@ public class ReporteController {
         Rol rolUsuario = obtenerRol(userDetails);
         return ResponseEntity.ok(reporteService.obtenerDashboard(
                 rolUsuario, userDetails.getUsername(), estado, gravedad, categoria, tipoObjetivo, escalado, orden));
-                rolUsuario, userDetails.getUsername(), estado, gravedad, categoria, tipoObjetivo, escalado, orden));
-    }
-
+        };
     @Operation(summary = "Cambiar el estado de un reporte", description = "Un MOD solo puede cambiar el estado de reportes asignados a moderación; un SOCIO solo los de sus propios locales. Un ADMIN puede cambiar cualquier reporte. Si un SOCIO/ADMIN marca RESUELTO, queda PENDIENTE_VALIDACION.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estado actualizado"),
