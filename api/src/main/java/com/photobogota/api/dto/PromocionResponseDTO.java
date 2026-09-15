@@ -58,7 +58,7 @@ public class PromocionResponseDTO {
     @Schema(description = "true si el socio no la ha desactivado manualmente")
     private Boolean activo;
 
-    @Schema(description = "Estado derivado: ACTIVA, PROXIMA, EXPIRADA o DESACTIVADA")
+    @Schema(description = "Estado derivado: ACTIVA, PROXIMA, EXPIRADA, DESACTIVADA o AGOTADA")
     private String estado;
 
     @Schema(description = "Fecha de creación de la promoción")
