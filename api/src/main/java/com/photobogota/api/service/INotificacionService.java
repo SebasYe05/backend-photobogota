@@ -7,6 +7,7 @@ import com.photobogota.api.dto.EnviarNotificacionRequestDTO;
 import com.photobogota.api.dto.NotificacionResponseDTO;
 import com.photobogota.api.dto.PreferenciasNotificacionDTO;
 import com.photobogota.api.model.Calificacion;
+import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.Spot;
 
 public interface INotificacionService {

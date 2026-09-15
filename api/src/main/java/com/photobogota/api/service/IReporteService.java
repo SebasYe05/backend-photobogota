@@ -7,6 +7,7 @@ import com.photobogota.api.dto.CrearReporteRequestDTO;
 import com.photobogota.api.dto.EscalarReporteRequestDTO;
 import com.photobogota.api.dto.ReporteResponseDTO;
 import com.photobogota.api.dto.ValidarReporteRequestDTO;
+import com.photobogota.api.dto.ValidarReporteRequestDTO;
 import com.photobogota.api.model.CategoriaReporte;
 import com.photobogota.api.model.EstadoReporte;
 import com.photobogota.api.model.Gravedad;
@@ -21,7 +22,12 @@ public interface IReporteService {
 
     List<ReporteResponseDTO> listarMisReportes(String usuario);
 
-    List<ReporteResponseDTO> listarPorRolAsignado(Rol rol);
+    /**
+     * Cola de reportes asignados a un rol. Para SOCIO, además hay que
+     * filtrar por el dueño (un socio no debe ver los locales de otro), por
+     * eso se pasa "username": para MOD/ADMIN se ignora.
+     */
+    List<ReporteResponseDTO> listarPorRolAsignado(Rol rol, String username);
 
     /**
      * Dashboard de reportes de la Etapa 2, con filtros combinables.

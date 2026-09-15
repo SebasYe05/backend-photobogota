@@ -16,6 +16,7 @@ import com.photobogota.api.dto.CrearReporteRequestDTO;
 import com.photobogota.api.dto.EscalarReporteRequestDTO;
 import com.photobogota.api.dto.ReporteResponseDTO;
 import com.photobogota.api.dto.ValidarReporteRequestDTO;
+import com.photobogota.api.dto.ValidarReporteRequestDTO;
 import com.photobogota.api.exception.AccessForbiddenException;
 import com.photobogota.api.exception.OperacionInvalidaException;
 import com.photobogota.api.exception.ResourceNotFoundException;
@@ -40,7 +41,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ReporteServiceImpl implements IReporteService {
 
     // Reportes en estos estados cuentan como "activos" para calcular reincidencia
-    private static final List<EstadoReporte> ESTADOS_ACTIVOS = List.of(EstadoReporte.NUEVO, EstadoReporte.EN_REVISION);
+    private static final List<EstadoReporte> ESTADOS_ACTIVOS = List.of(
+            EstadoReporte.NUEVO, EstadoReporte.EN_REVISION, EstadoReporte.PENDIENTE_VALIDACION);
 
     private final ReporteRepository reporteRepository;
     private final SpotRepository spotRepository;
@@ -90,8 +92,14 @@ public class ReporteServiceImpl implements IReporteService {
                 ? TipoObjetivoReporte.RESENA
                 : TipoObjetivoReporte.SPOT;
 
+        boolean esLocalDeSocio = spot != null && "SOCIO".equals(spot.getCreadorRol());
+
         long reportesActivosPrevios = contarReportesActivosPrevios(request.getSpotId(), request.getResenaId());
         Gravedad gravedad = calcularGravedad(request.getCategoria(), reportesActivosPrevios);
+
+        Rol asignadoA = asignarResponsable(request.getCategoria(), tipoObjetivo, esLocalDeSocio);
+
+        LocalDateTime ahora = LocalDateTime.now();
 
         Reporte reporte = Reporte.builder()
                 .numeroTicket(generarNumeroTicketUnico())
@@ -102,16 +110,31 @@ public class ReporteServiceImpl implements IReporteService {
                 .tipoObjetivo(tipoObjetivo)
                 .spotId(request.getSpotId())
                 .nombreSpot(spot != null ? spot.getNombre() : null)
-                .esLocalDeSocio(spot != null ? "SOCIO".equals(spot.getCreadorRol()) : null)
+                .esLocalDeSocio(spot != null ? esLocalDeSocio : null)
+                .propietarioSocio(esLocalDeSocio ? spot.getCreadorUsername() : null)
                 .resenaId(calificacionReportada != null ? calificacionReportada.getId() : null)
                 .autorResenaReportada(calificacionReportada != null ? calificacionReportada.getUsuario() : null)
-                .asignadoA(asignarResponsable(request.getCategoria()))
+                .asignadoA(asignadoA)
                 .gravedad(gravedad)
                 .estado(EstadoReporte.NUEVO)
-                .fechaCreacion(LocalDateTime.now())
+                .fechaCreacion(ahora)
+                // Plazos de atención del socio (HU 15 pt 6): responder en 24h,
+                // resolver en 5 días. Solo aplica cuando queda en su cola.
+                .fechaLimiteRespuesta(asignadoA == Rol.SOCIO ? ahora.plusHours(24) : null)
+                .fechaLimiteResolucion(asignadoA == Rol.SOCIO ? ahora.plusDays(5) : null)
                 .build();
 
         Reporte guardado = reporteRepository.save(reporte);
+
+        // HU 6 pt 4: confirmación con número de ticket al reportante.
+        notificacionService.notificarSistema(usuario, "Reporte recibido: " + guardado.getNumeroTicket(),
+                "Registramos tu reporte con el ticket " + guardado.getNumeroTicket()
+                        + ". Te avisaremos cuando se resuelva.");
+
+        // HU 6 pt 3 / HU 15 pt 1 / HU 16 pt 7: avisar de inmediato a quien
+        // le corresponde atenderlo.
+        notificarNuevaAsignacion(guardado);
+
         return mapearADTO(guardado);
     }
 
@@ -130,8 +153,11 @@ public class ReporteServiceImpl implements IReporteService {
     }
 
     @Override
-    public List<ReporteResponseDTO> listarPorRolAsignado(Rol rol) {
-        return reporteRepository.findByAsignadoA(rol).stream()
+    public List<ReporteResponseDTO> listarPorRolAsignado(Rol rol, String username) {
+        List<Reporte> reportes = rol == Rol.SOCIO
+                ? reporteRepository.findByAsignadoAAndPropietarioSocio(Rol.SOCIO, username)
+                : reporteRepository.findByAsignadoA(rol);
+        return reportes.stream()
                 .map(this::mapearADTO)
                 .toList();
     }
@@ -217,14 +243,7 @@ public class ReporteServiceImpl implements IReporteService {
         reporte.setFechaActualizacion(LocalDateTime.now());
 
         if (request.getObservacion() != null && !request.getObservacion().isBlank()) {
-            if (reporte.getBitacora() == null) {
-                reporte.setBitacora(new ArrayList<>());
-            }
-            reporte.getBitacora().add(Reporte.Observacion.builder()
-                    .autor(usuario)
-                    .texto(request.getObservacion())
-                    .fecha(LocalDateTime.now())
-                    .build());
+            agregarObservacion(reporte, usuario, request.getObservacion());
         }
 
         Reporte actualizado = reporteRepository.save(reporte);
@@ -269,8 +288,24 @@ public class ReporteServiceImpl implements IReporteService {
         reporte.setMotivoEscalado(request.getMotivo());
         reporte.setFechaActualizacion(LocalDateTime.now());
 
-        Reporte actualizado = reporteRepository.save(reporte);
-        return mapearADTO(actualizado);
+        for (Reporte reporte : vencidos) {
+            registrarEscalamiento(reporte, Rol.SOCIO, Rol.MOD, "sistema",
+                    "Escalamiento automático: el socio no respondió dentro del plazo de 24 horas", true);
+            Reporte actualizado = reporteRepository.save(reporte);
+
+            notificacionService.notificarPorRol(Rol.MOD,
+                    "Reporte escalado automáticamente: " + actualizado.getNumeroTicket(),
+                    "El socio no respondió a tiempo el reporte " + actualizado.getNumeroTicket()
+                            + " y se escaló automáticamente.",
+                    "sistema");
+
+            if (actualizado.getPropietarioSocio() != null) {
+                notificacionService.notificarSistema(actualizado.getPropietarioSocio(),
+                        "Reporte escalado por falta de respuesta: " + actualizado.getNumeroTicket(),
+                        "No respondiste a tiempo el reporte " + actualizado.getNumeroTicket()
+                                + " (máximo 24h) y se escaló a moderación.");
+            }
+        }
     }
 
     @Override
@@ -419,10 +454,23 @@ public class ReporteServiceImpl implements IReporteService {
         };
     }
 
-    // Asignación automática (Etapa 1, punto 3):
-    // - Error técnico -> ADMIN
-    // - Contenido ofensivo, spam, información incorrecta y problema con spot -> MOD
-    private Rol asignarResponsable(CategoriaReporte categoria) {
+    // Asignación automática (HU 6 pt 3, corregida para HU 15/HU 24):
+    // - Local de un SOCIO (esLocalDeSocio=true) -> SOCIO, sin importar la
+    //   categoría: el dueño del local es quien primero debe atenderlo.
+    // - Cualquier otro reporte sobre un spot (tipoObjetivo=SPOT, no es local
+    //   de socio) -> MOD, sin importar la categoría: TODO reporte de un spot
+    //   le debe llegar al moderador.
+    // - Reseñas y reportes sin spot asociado (ej: error técnico general de
+    //   la app) -> se asignan por categoría: error técnico a ADMIN, el
+    //   resto a MOD.
+    private Rol asignarResponsable(CategoriaReporte categoria, TipoObjetivoReporte tipoObjetivo,
+            boolean esLocalDeSocio) {
+        if (esLocalDeSocio) {
+            return Rol.SOCIO;
+        }
+        if (tipoObjetivo == TipoObjetivoReporte.SPOT) {
+            return Rol.MOD;
+        }
         return switch (categoria) {
             case ERROR_TECNICO -> Rol.ADMIN;
             case CONTENIDO_OFENSIVO, SPAM, INFORMACION_INCORRECTA, PROBLEMA_SPOT -> Rol.MOD;
@@ -451,6 +499,19 @@ public class ReporteServiceImpl implements IReporteService {
                                 .build())
                         .toList();
 
+        List<ReporteResponseDTO.EscalamientoDTO> historial = reporte.getHistorialEscalamiento() == null
+                ? List.of()
+                : reporte.getHistorialEscalamiento().stream()
+                        .map(e -> ReporteResponseDTO.EscalamientoDTO.builder()
+                                .de(e.getDe())
+                                .a(e.getA())
+                                .por(e.getPor())
+                                .motivo(e.getMotivo())
+                                .automatico(e.getAutomatico())
+                                .fecha(e.getFecha())
+                                .build())
+                        .toList();
+
         return ReporteResponseDTO.builder()
                 .id(reporte.getId())
                 .numeroTicket(reporte.getNumeroTicket())
@@ -462,6 +523,7 @@ public class ReporteServiceImpl implements IReporteService {
                 .spotId(reporte.getSpotId())
                 .nombreSpot(reporte.getNombreSpot())
                 .esLocalDeSocio(reporte.getEsLocalDeSocio())
+                .propietarioSocio(reporte.getPropietarioSocio())
                 .resenaId(reporte.getResenaId())
                 .autorResenaReportada(reporte.getAutorResenaReportada())
                 .asignadoA(reporte.getAsignadoA())
@@ -470,6 +532,13 @@ public class ReporteServiceImpl implements IReporteService {
                 .fechaEscalado(reporte.getFechaEscalado())
                 .escaladoPor(reporte.getEscaladoPor())
                 .motivoEscalado(reporte.getMotivoEscalado())
+                .escaladoAutomaticamente(reporte.getEscaladoAutomaticamente())
+                .historialEscalamiento(historial)
+                .resueltoPor(reporte.getResueltoPor())
+                .validadoPor(reporte.getValidadoPor())
+                .fechaValidacion(reporte.getFechaValidacion())
+                .fechaLimiteRespuesta(reporte.getFechaLimiteRespuesta())
+                .fechaLimiteResolucion(reporte.getFechaLimiteResolucion())
                 .actualizadoPor(reporte.getActualizadoPor())
                 .resueltoPor(reporte.getResueltoPor())
                 .estado(reporte.getEstado())
