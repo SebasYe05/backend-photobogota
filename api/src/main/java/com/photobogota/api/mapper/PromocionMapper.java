@@ -31,6 +31,12 @@ public interface PromocionMapper {
         if (inicio != null && inicio.isAfter(ahora)) {
             return "PROXIMA";
         }
+        // Agotada: se dedujo de los cupos consumidos mientras sigue vigente.
+        if (promocion.getUsosMaximos() != null
+                && promocion.getUsos() != null
+                && promocion.getUsos() >= promocion.getUsosMaximos()) {
+            return "AGOTADA";
+        }
         return "ACTIVA";
     }
 }

@@ -23,8 +23,10 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestControllerAdvice
@@ -32,17 +34,22 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     // 1. Errores de validación (campos vacíos, formatos incorrectos)
+    // Formato Spring para formularios: { errors: [ { defaultMessage } ] }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationErrors(
             MethodArgumentNotValidException ex, HttpServletRequest request) {
 
         log.warn("Error de validación en petición: {}", ex.getBindingResult().getObjectName());
 
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors()
-                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+        List<Map<String, Object>> errors = new ArrayList<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            Map<String, Object> detalle = new HashMap<>();
+            detalle.put("defaultMessage",
+                    error.getDefaultMessage() != null ? error.getDefaultMessage() : "Valor inválido");
+            errors.add(detalle);
+        });
 
-        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, null, request);
+        Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, "Error de validación", request);
         body.put("errors", errors);
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
@@ -131,6 +138,29 @@ public class GlobalExceptionHandler {
 
         Map<String, Object> body = buildBody(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    // 4.2.1 Conflicto de negocio: el estado del recurso impide la operación (409),
+    // ej. una promoción agotada o un canje ya utilizado.
+    @ExceptionHandler(RecursoNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> handleRecursoNoDisponible(
+            RecursoNoDisponibleException ex, HttpServletRequest request) {
+
+        log.warn("Conflicto de negocio en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        Map<String, Object> body = buildBody(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+    }
+
+    // 4.2.2 Recurso vencido/caducado (410), ej. un código de canje expirado.
+    @ExceptionHandler(RecursoCaducadoException.class)
+    public ResponseEntity<Map<String, Object>> handleRecursoCaducado(
+            RecursoCaducadoException ex, HttpServletRequest request) {
+
+        log.warn("Recurso caducado en {}: {}", request.getRequestURI(), ex.getMessage());
+
+        Map<String, Object> body = buildBody(HttpStatus.GONE, ex.getMessage(), request);
+        return new ResponseEntity<>(body, HttpStatus.GONE);
     }
 
     // 4.3 Contenido rechazado por el filtro automático o usuario sancionado.
