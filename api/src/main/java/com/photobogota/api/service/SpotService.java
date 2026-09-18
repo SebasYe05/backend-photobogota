@@ -1,17 +1,22 @@
 package com.photobogota.api.service;
 
 import com.photobogota.api.dto.*;
+import com.photobogota.api.exception.AccessForbiddenException;
+import com.photobogota.api.exception.OperacionInvalidaException;
 import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.mapper.SpotMapper;
 import com.photobogota.api.model.Spot;
 import com.photobogota.api.model.TipoContenidoModerado;
+import com.photobogota.api.model.VistaSpot;
 import com.photobogota.api.repository.SpotRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
+import com.photobogota.api.repository.VistaSpotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -24,6 +29,7 @@ public class SpotService {
     private final SpotRepository spotRepository;
     private final SpotMapper spotMapper;
     private final UsuarioAuthRepository usuarioAuthRepository;
+    private final VistaSpotRepository vistaSpotRepository;
     private final INotificacionService notificacionService;
     private final IPuntosService puntosService;
     private final IFiltroContenidoService filtroContenidoService;
@@ -160,6 +166,56 @@ public class SpotService {
     }
 
     @Transactional
+    public SpotResponseDTO actualizarSpot(String id, CrearSpotRequestDTO request, String usuario) {
+        Spot spot = spotRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Local no encontrado con id: " + id));
+
+        if (!"LOCAL".equalsIgnoreCase(normalizarTipo(spot))) {
+            throw new OperacionInvalidaException("Solo se pueden editar locales de socios");
+        }
+        if (!"SOCIO".equalsIgnoreCase(spot.getCreadorRol())) {
+            throw new OperacionInvalidaException("Solo los locales de socios pueden editarse");
+        }
+        if (!usuario.equalsIgnoreCase(spot.getCreadorUsername())) {
+            throw new AccessForbiddenException("Solo el socio dueño del local puede editarlo");
+        }
+
+        filtroContenidoService.validarContenido(usuario, TipoContenidoModerado.SPOT_NOMBRE,
+                request.getNombre());
+        filtroContenidoService.validarContenido(usuario, TipoContenidoModerado.SPOT_DESCRIPCION,
+                request.getDescripcion());
+
+        spot.setNombre(request.getNombre());
+        spot.setLatitud(request.getLatitud());
+        spot.setLongitud(request.getLongitud());
+        spot.setDireccion(request.getDireccion());
+        spot.setCategoria(request.getCategoria());
+        spot.setLocalidad(request.getLocalidad());
+        spot.setDescripcion(request.getDescripcion());
+        spot.setRecomendacion(request.getRecomendacion());
+        spot.setTipsFoto(request.getTipsFoto());
+        spot.setTelefono(request.getTelefono());
+        spot.setHorario(request.getHorario());
+        spot.setSitioWeb(request.getSitioWeb());
+
+        // El tipo del local permanece LOCAL; la edición no permite cambiarlo.
+        if (request.getImagenes() != null) {
+            spot.setImagenes(request.getImagenes());
+        }
+
+        Spot updatedSpot = spotRepository.save(spot);
+        SpotResponseDTO response = spotMapper.toResponse(updatedSpot);
+
+        if (updatedSpot.getCreadorRol() != null) {
+            response.setRol(updatedSpot.getCreadorRol());
+        }
+
+        response.setTienePromocion(promocionService.tienePromocionActiva(id));
+
+        return response;
+    }
+
+    @Transactional
     public SpotResponseDTO agregarResena(String spotId, ResenaRequestDTO request, String usuario) {
         Spot spot = spotRepository.findById(spotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Spot no encontrado con id: " + spotId));
@@ -208,5 +264,36 @@ public class SpotService {
             return spot.getTipo();
         }
         return "SOCIO".equals(spot.getCreadorRol()) ? "LOCAL" : "SPOT";
+    }
+
+    /**
+     * Registra una visita al detalle de un local/spot. No cuenta las visitas
+     * repetidas del mismo visitante dentro de la última hora ni las visitas
+     * hechas por el propio dueño del local.
+     */
+    public void registrarVista(String spotId, String usuario) {
+        Spot spot = spotRepository.findById(spotId)
+                .orElseThrow(() -> new ResourceNotFoundException("Local no encontrado con id: " + spotId));
+
+        if (usuario != null && usuario.equalsIgnoreCase(spot.getCreadorUsername())) {
+            return;
+        }
+
+        try {
+            LocalDateTime haceUnaHora = LocalDateTime.now().minusHours(1);
+            boolean yaRegistrada = usuario != null
+                    ? vistaSpotRepository.existsBySpotIdAndUsuarioAndFechaAfter(spotId, usuario, haceUnaHora)
+                    : vistaSpotRepository.existsBySpotIdAndUsuarioIsNullAndFechaAfter(spotId, haceUnaHora);
+            if (yaRegistrada) {
+                return;
+            }
+
+            vistaSpotRepository.save(VistaSpot.builder()
+                    .spotId(spotId)
+                    .usuario(usuario)
+                    .build());
+        } catch (Exception e) {
+            log.error("No se pudo registrar la vista del spot {} por {}: {}", spotId, usuario, e.getMessage());
+        }
     }
 }

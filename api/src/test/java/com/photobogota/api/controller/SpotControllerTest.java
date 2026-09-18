@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -114,5 +115,32 @@ class SpotControllerTest extends ControllerTestSupport {
                 .andExpect(status().isOk());
 
         verify(spotService).agregarResena(eq("s1"), any(), eq("juanromero"));
+    }
+
+    @Test
+    void actualizarSpot_devuelve200() throws Exception {
+        when(spotService.actualizarSpot(eq("s1"), any(), eq("socio1")))
+                .thenReturn(mock(SpotResponseDTO.class));
+
+        mvc(controller)
+                .perform(json(put("/api/v1/spots/s1"),
+                        "{\"nombre\":\"Caldos Renovado\",\"latitud\":4.6097,\"longitud\":-74.0817,"
+                                + "\"direccion\":\"Calle 123\",\"categoria\":\"Gastronomía\","
+                                + "\"localidad\":\"Chapinero\",\"descripcion\":\"Caldo casero\","
+                                + "\"tipo\":\"LOCAL\"}")
+                        .with(autenticado("socio1", "SOCIO")))
+                .andExpect(status().isOk());
+
+        verify(spotService).actualizarSpot(eq("s1"), any(), eq("socio1"));
+    }
+
+    @Test
+    void actualizarSpot_conCuerpoInvalido_devuelve400() throws Exception {
+        mvc(controller)
+                .perform(json(put("/api/v1/spots/s1"),
+                        "{\"nombre\":\"\",\"categoria\":\"Parque\"}")
+                        .with(autenticado("socio1", "SOCIO")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").exists());
     }
 }

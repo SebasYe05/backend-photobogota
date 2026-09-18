@@ -97,6 +97,8 @@ public class SecurityConfig {
 
                                                 // Spots públicos (solo lectura)
                                                 .requestMatchers(HttpMethod.GET, "/api/v1/spots/**").permitAll()
+                                                // Registrar una visita a un spot sin necesidad de cuenta (idempotente)
+                                                .requestMatchers(HttpMethod.POST, "/api/v1/spots/*/vista").permitAll()
 
                                                 // Promociones públicas (solo lectura): el mapa consulta las activas
                                                 // y las de cada local. Crear/gestionar requiere rol SOCIO (vía @PreAuthorize).

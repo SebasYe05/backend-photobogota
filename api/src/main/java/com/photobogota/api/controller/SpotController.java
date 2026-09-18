@@ -50,8 +50,11 @@ public class SpotController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<SpotResponseDTO> obtenerSpot(
-            @Parameter(description = "ID del spot", required = true) @PathVariable String id) {
-        return ResponseEntity.ok(spotService.obtenerPorId(id));
+            @Parameter(description = "ID del spot", required = true) @PathVariable String id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        SpotResponseDTO response = spotService.obtenerPorId(id);
+        spotService.registrarVista(id, userDetails != null ? userDetails.getUsername() : null);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Publicar nuevo spot", description = "Crea un spot fotográfico. Requiere rol MIEMBRO, SOCIO o MOD.", security = @SecurityRequirement(name = "bearerAuth"))
@@ -75,6 +78,35 @@ public class SpotController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(spotService.crearSpot(request, userDetails.getUsername(), rol));
+    }
+
+    @Operation(summary = "Actualizar un local", description = "Actualiza los datos públicos de un local del socio autenticado. Solo el socio dueño puede editarlo.", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Local actualizado"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o el spot no es un local de socio"),
+            @ApiResponse(responseCode = "403", description = "No eres el dueño del local"),
+            @ApiResponse(responseCode = "404", description = "Local no encontrado")
+    })
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SOCIO')")
+    public ResponseEntity<SpotResponseDTO> actualizarSpot(
+            @Parameter(description = "ID del local a editar", required = true) @PathVariable String id,
+            @Valid @RequestBody CrearSpotRequestDTO request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(spotService.actualizarSpot(id, request, userDetails.getUsername()));
+    }
+
+    @Operation(summary = "Registrar visita a un spot", description = "Suma una visita al contador de vistas de un local/spot. Idempotente: no duplica visitas del mismo visitante (o anónimas) dentro de la última hora, ni cuenta las del propio dueño.", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Visita registrada"),
+            @ApiResponse(responseCode = "401", description = "No autenticado")
+    })
+    @PostMapping("/{id}/vista")
+    public ResponseEntity<Void> registrarVista(
+            @Parameter(description = "ID del spot visitado", required = true) @PathVariable String id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        spotService.registrarVista(id, userDetails != null ? userDetails.getUsername() : null);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Agregar reseña a un spot", description = "Publica una calificación y comentario sobre un spot. Requiere estar autenticado.", security = @SecurityRequirement(name = "bearerAuth"))

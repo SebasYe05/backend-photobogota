@@ -14,6 +14,8 @@ import com.photobogota.api.dto.CrearSpotRequestDTO;
 import com.photobogota.api.dto.ResenaRequestDTO;
 import com.photobogota.api.dto.SpotResumenDTO;
 import com.photobogota.api.dto.SpotResponseDTO;
+import com.photobogota.api.exception.AccessForbiddenException;
+import com.photobogota.api.exception.OperacionInvalidaException;
 import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.mapper.SpotMapper;
 import com.photobogota.api.model.Rol;
@@ -21,8 +23,10 @@ import com.photobogota.api.model.Spot;
 import com.photobogota.api.model.TipoContenidoModerado;
 import com.photobogota.api.model.TipoPuntos;
 import com.photobogota.api.model.UsuarioAuth;
+import com.photobogota.api.model.VistaSpot;
 import com.photobogota.api.repository.SpotRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
+import com.photobogota.api.repository.VistaSpotRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -55,6 +59,9 @@ class SpotServiceTest {
 
     @Mock
     private PromocionService promocionService;
+
+    @Mock
+    private VistaSpotRepository vistaSpotRepository;
 
     @InjectMocks
     private SpotService spotService;
@@ -89,6 +96,37 @@ class SpotServiceTest {
         request.setCategoria("Parque");
         request.setLocalidad("Kennedy");
         request.setDescripcion("Un gran parque para fotos");
+        return request;
+    }
+
+    private Spot localDeEjemplo(String id, String creadorUsername) {
+        Spot spot = new Spot();
+        spot.setId(id);
+        spot.setNombre("Caldos de la Abuela");
+        spot.setTipo("LOCAL");
+        spot.setCreadorRol("SOCIO");
+        spot.setCreadorUsername(creadorUsername);
+        spot.setTelefono("3001234567");
+        spot.setImagenes(List.of("/spots/" + id + ".jpg"));
+        return spot;
+    }
+
+    private CrearSpotRequestDTO requestActualizar() {
+        CrearSpotRequestDTO request = new CrearSpotRequestDTO();
+        request.setNombre("Caldos de la Abuela Renovado");
+        request.setLatitud(4.6097);
+        request.setLongitud(-74.0817);
+        request.setDireccion("Calle 123 #45-67");
+        request.setCategoria("Gastronomía");
+        request.setLocalidad("Chapinero");
+        request.setDescripcion("Caldo casero renovado");
+        request.setRecomendacion("Ideal para el desayuno");
+        request.setTipsFoto("Luz natural junto a la ventana");
+        request.setTipo("LOCAL");
+        request.setTelefono("3009876543");
+        request.setHorario("Lun a Vie 7:00-20:00");
+        request.setSitioWeb("https://caldos.example.com");
+        request.setImagenes(List.of("/spots/nueva.jpg"));
         return request;
     }
 
@@ -351,6 +389,128 @@ class SpotServiceTest {
         request.setComentario("Buen lugar");
 
         assertThatThrownBy(() -> spotService.agregarResena("s-x", request, "miembro1"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void actualizarSpot_exitoso_actualizaLosDatosDelLocal() {
+        Spot spot = localDeEjemplo("s1", "socio1");
+        when(spotRepository.findById("s1")).thenReturn(Optional.of(spot));
+        when(spotRepository.save(any(Spot.class))).thenAnswer(inv -> inv.getArgument(0));
+        SpotResponseDTO response = responseDeEjemplo("s1");
+        response.setRol("SOCIO");
+        when(spotMapper.toResponse(any(Spot.class))).thenReturn(response);
+        when(promocionService.tienePromocionActiva("s1")).thenReturn(true);
+
+        SpotResponseDTO resultado = spotService.actualizarSpot("s1", requestActualizar(), "socio1");
+
+        assertThat(spot.getNombre()).isEqualTo("Caldos de la Abuela Renovado");
+        assertThat(spot.getCategoria()).isEqualTo("Gastronomía");
+        assertThat(spot.getLocalidad()).isEqualTo("Chapinero");
+        assertThat(spot.getTelefono()).isEqualTo("3009876543");
+        assertThat(spot.getHorario()).isEqualTo("Lun a Vie 7:00-20:00");
+        assertThat(spot.getSitioWeb()).isEqualTo("https://caldos.example.com");
+        assertThat(spot.getImagenes()).containsExactly("/spots/nueva.jpg");
+        assertThat(spot.getTipo()).isEqualTo("LOCAL");
+        assertThat(spot.getCreadorUsername()).isEqualTo("socio1");
+        assertThat(resultado.getRol()).isEqualTo("SOCIO");
+        assertThat(resultado.getTienePromocion()).isTrue();
+    }
+
+    @Test
+    void actualizarSpot_spotInexistente_lanzaResourceNotFound() {
+        when(spotRepository.findById("s-x")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> spotService.actualizarSpot("s-x", requestActualizar(), "socio1"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void actualizarSpot_noEsUnLocal_lanzaOperacionInvalida() {
+        Spot spot = spotDeEjemplo("s1", "Mirador");
+        when(spotRepository.findById("s1")).thenReturn(Optional.of(spot));
+
+        assertThatThrownBy(() -> spotService.actualizarSpot("s1", requestActualizar(), "socio1"))
+                .isInstanceOf(OperacionInvalidaException.class);
+    }
+
+    @Test
+    void actualizarSpot_deOtroSocio_lanzaAccessForbidden() {
+        Spot spot = localDeEjemplo("s1", "socio1");
+        when(spotRepository.findById("s1")).thenReturn(Optional.of(spot));
+
+        assertThatThrownBy(() -> spotService.actualizarSpot("s1", requestActualizar(), "socio2"))
+                .isInstanceOf(AccessForbiddenException.class);
+    }
+
+    @Test
+    void actualizarSpot_validaContenidoDelNombreYLaDescripcion() {
+        Spot spot = localDeEjemplo("s1", "socio1");
+        when(spotRepository.findById("s1")).thenReturn(Optional.of(spot));
+        when(spotRepository.save(any(Spot.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(spotMapper.toResponse(any(Spot.class))).thenReturn(responseDeEjemplo("s1"));
+        when(promocionService.tienePromocionActiva("s1")).thenReturn(false);
+
+        spotService.actualizarSpot("s1", requestActualizar(), "socio1");
+
+        verify(filtroContenidoService).validarContenido(eq("socio1"), eq(TipoContenidoModerado.SPOT_NOMBRE), any());
+        verify(filtroContenidoService).validarContenido(eq("socio1"), eq(TipoContenidoModerado.SPOT_DESCRIPCION), any());
+    }
+
+    @Test
+    void registrarVista_sinVisitasRecientes_guardaVista() {
+        Spot spot = localDeEjemplo("s1", "socio1");
+        when(spotRepository.findById("s1")).thenReturn(Optional.of(spot));
+        when(vistaSpotRepository.existsBySpotIdAndUsuarioAndFechaAfter(eq("s1"), eq("miembro1"), any()))
+                .thenReturn(false);
+
+        spotService.registrarVista("s1", "miembro1");
+
+        org.mockito.ArgumentCaptor<VistaSpot> captor = org.mockito.ArgumentCaptor.forClass(VistaSpot.class);
+        verify(vistaSpotRepository).save(captor.capture());
+        assertThat(captor.getValue().getSpotId()).isEqualTo("s1");
+        assertThat(captor.getValue().getUsuario()).isEqualTo("miembro1");
+    }
+
+    @Test
+    void registrarVista_delDueno_noCuenta() {
+        Spot spot = localDeEjemplo("s1", "socio1");
+        when(spotRepository.findById("s1")).thenReturn(Optional.of(spot));
+
+        spotService.registrarVista("s1", "socio1");
+
+        verify(vistaSpotRepository, never()).save(any());
+    }
+
+    @Test
+    void registrarVista_repetidaEnLaUltimaHora_noDuplica() {
+        Spot spot = localDeEjemplo("s1", "socio1");
+        when(spotRepository.findById("s1")).thenReturn(Optional.of(spot));
+        when(vistaSpotRepository.existsBySpotIdAndUsuarioAndFechaAfter(eq("s1"), eq("miembro1"), any()))
+                .thenReturn(true);
+
+        spotService.registrarVista("s1", "miembro1");
+
+        verify(vistaSpotRepository, never()).save(any());
+    }
+
+    @Test
+    void registrarVista_anonimaRepetidaEnLaUltimaHora_noDuplica() {
+        Spot spot = localDeEjemplo("s1", "socio1");
+        when(spotRepository.findById("s1")).thenReturn(Optional.of(spot));
+        when(vistaSpotRepository.existsBySpotIdAndUsuarioIsNullAndFechaAfter(eq("s1"), any()))
+                .thenReturn(true);
+
+        spotService.registrarVista("s1", null);
+
+        verify(vistaSpotRepository, never()).save(any());
+    }
+
+    @Test
+    void registrarVista_spotInexistente_lanzaResourceNotFound() {
+        when(spotRepository.findById("s-x")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> spotService.registrarVista("s-x", "miembro1"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

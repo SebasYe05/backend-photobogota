@@ -18,4 +18,8 @@ public interface CanjeRepository extends MongoRepository<Canje, String> {
     List<Canje> findByPromocionId(String promocionId);
 
     List<Canje> findByPromocionIdAndMiembroNombre(String promocionId, String miembroNombre);
+
+    // Canjes realizados por el socio en un rango de fechas (para estadísticas).
+    List<Canje> findBySocioUsernameAndFechaCanjeBetween(String socioUsername,
+            java.time.LocalDateTime desde, java.time.LocalDateTime hasta);
 }
