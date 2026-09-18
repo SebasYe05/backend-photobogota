@@ -23,6 +23,7 @@ import com.photobogota.api.dto.VerificarCodigoDTO;
 import com.photobogota.api.exception.EmailAlreadyExistsException;
 import com.photobogota.api.exception.InvalidCredentialsException;
 import com.photobogota.api.exception.RegistroException;
+import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.exception.UsernameAlreadyExistsException;
 import com.photobogota.api.mapper.UsuarioMapper;
 import com.photobogota.api.model.CodigoRecuperacion;
@@ -353,13 +354,13 @@ public class AuthServiceImpl implements IAuthService {
                 String email = dto.getEmail();
                 log.info("Solicitando recuperación de contraseña para: {}", email);
 
-                // Buscar el usuario (si no existe, no revelar para mayor seguridad)
+                // Buscar el usuario (si no existe, devolver error para que el frontend valide)
                 Optional<UsuarioAuth> usuarioOpt = usuarioAuthRepository.findByEmail(email);
 
                 if (usuarioOpt.isEmpty()) {
-                        // No revelar si el email existe o no
                         log.info("Solicitud de recuperación para email no registrado: {}", email);
-                        return "Se ha enviado un código de verificación a tu correo electrónico";
+                        throw new ResourceNotFoundException(
+                                        "No existe una cuenta registrada con el correo " + email);
                 }
 
                 UsuarioAuth usuario = usuarioOpt.get();

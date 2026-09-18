@@ -23,6 +23,7 @@ import com.photobogota.api.dto.VerificarCodigoDTO;
 import com.photobogota.api.exception.EmailAlreadyExistsException;
 import com.photobogota.api.exception.InvalidCredentialsException;
 import com.photobogota.api.exception.RegistroException;
+import com.photobogota.api.exception.ResourceNotFoundException;
 import com.photobogota.api.exception.UsernameAlreadyExistsException;
 import com.photobogota.api.mapper.UsuarioMapper;
 import com.photobogota.api.model.CodigoRecuperacion;
@@ -294,16 +295,15 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void solicitarRecuperacion_emailNoRegistrado_noRevelaNadaPermiteAvanzar() {
+    void solicitarRecuperacion_emailNoRegistrado_lanzaResourceNotFound() {
         when(usuarioAuthRepository.findByEmail("ghost@photobogota.com")).thenReturn(java.util.Optional.empty());
 
         SolicitarRecuperacionDTO dto = SolicitarRecuperacionDTO.builder()
                 .email("ghost@photobogota.com")
                 .build();
 
-        String mensaje = authService.solicitarRecuperacionContrasena(dto);
-
-        assertThat(mensaje).isEqualTo("Se ha enviado un código de verificación a tu correo electrónico");
+        assertThatThrownBy(() -> authService.solicitarRecuperacionContrasena(dto))
+                .isInstanceOf(ResourceNotFoundException.class);
         verify(emailService, never()).enviarCorreoHtml(any(), any(), any());
     }
 
