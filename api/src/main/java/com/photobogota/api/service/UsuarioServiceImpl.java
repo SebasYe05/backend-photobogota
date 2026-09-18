@@ -20,6 +20,7 @@ import com.photobogota.api.model.TipoContenidoModerado;
 import com.photobogota.api.model.Usuario;
 import com.photobogota.api.model.UsuarioAuth;
 import com.photobogota.api.repository.CalificacionRepository;
+import com.photobogota.api.repository.CanjeRepository;
 import com.photobogota.api.repository.GuardadoRepository;
 import com.photobogota.api.repository.SpotRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
@@ -44,6 +45,8 @@ public class UsuarioServiceImpl implements IUsuarioService {
     private final SpotRepository spotRepository;
     private final CalificacionRepository calificacionRepository;
     private final GuardadoRepository guardadoRepository;
+    private final CanjeRepository canjeRepository;
+    private final PromocionService promocionService;
     private final SpotMapper spotMapper;
     private final IFiltroContenidoService filtroContenidoService;
 
@@ -237,7 +240,10 @@ public class UsuarioServiceImpl implements IUsuarioService {
                 .rol(usuarioAuth.getRol().name())
                 .totalSpots((int) spotRepository.countByCreadorUsername(nombreUsuario))
                 .totalResenas((int) calificacionRepository.countByUsuario(nombreUsuario))
-                .totalGuardados((int) guardadoRepository.countByUsuario(nombreUsuario));
+                .totalGuardados((int) guardadoRepository.countByUsuario(nombreUsuario))
+                .totalCanjes((int) canjeRepository.countByMiembroNombre(nombreUsuario))
+                .totalResenasRecibidas(contarResenasRecibidas(nombreUsuario))
+                .totalPromocionesActivas((int) promocionService.contarActivas(nombreUsuario));
 
         // Solo los MIEMBRO tienen puntos/nivel; para el resto de roles queda en null
         if (usuario instanceof Miembro) {
@@ -247,5 +253,24 @@ public class UsuarioServiceImpl implements IUsuarioService {
         }
 
         return builder.build();
+    }
+
+    /**
+     * Total de reseñas recibidas en los locales del usuario (suma de las
+     * calificaciones de cada spot cuyo creador es el usuario).
+     */
+    private int contarResenasRecibidas(String nombreUsuario) {
+        List<Spot> spots = spotRepository.findByCreadorUsername(nombreUsuario);
+        if (spots == null || spots.isEmpty()) {
+            return 0;
+        }
+        List<String> spotIds = spots.stream()
+                .map(Spot::getId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+        if (spotIds.isEmpty()) {
+            return 0;
+        }
+        return (int) calificacionRepository.countBySpotIdIn(spotIds);
     }
 }

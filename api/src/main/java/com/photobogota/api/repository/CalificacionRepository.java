@@ -3,6 +3,7 @@ package com.photobogota.api.repository;
 import com.photobogota.api.model.Calificacion;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface CalificacionRepository extends MongoRepository<Calificacion, String> {
@@ -14,4 +15,6 @@ public interface CalificacionRepository extends MongoRepository<Calificacion, St
     List<Calificacion> findByUsuario(String usuario);
 
     long countByUsuario(String usuario);
+
+    long countBySpotIdIn(Collection<String> spotIds);
 }

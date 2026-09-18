@@ -53,4 +53,16 @@ public class PerfilUsuarioDTO {
     @Schema(description = "Total de spots guardados por el usuario", example = "3")
     @Builder.Default
     private Integer totalGuardados = 0;
+
+    @Schema(description = "Total de canjes de promociones realizados por el usuario", example = "3")
+    @Builder.Default
+    private Integer totalCanjes = 0;
+
+    @Schema(description = "Total de reseñas recibidas en los locales de un socio", example = "12")
+    @Builder.Default
+    private Integer totalResenasRecibidas = 0;
+
+    @Schema(description = "Total de promociones activas y vigentes de un socio", example = "2")
+    @Builder.Default
+    private Integer totalPromocionesActivas = 0;
 }

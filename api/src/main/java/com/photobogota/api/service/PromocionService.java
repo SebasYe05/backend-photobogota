@@ -111,6 +111,16 @@ public class PromocionService {
                 .toList();
     }
 
+    /**
+     * Promociones del socio actualmente activas y vigentes (las que ve el público).
+     */
+    public long contarActivas(String socioUsername) {
+        return promocionRepository.findBySocioUsername(socioUsername).stream()
+                .filter(p -> Boolean.TRUE.equals(p.getActivo()))
+                .filter(this::estaVigente)
+                .count();
+    }
+
     public PromocionResponseDTO obtenerPorId(String id) {
         Promocion promocion = promocionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Promoción no encontrada con id: " + id));

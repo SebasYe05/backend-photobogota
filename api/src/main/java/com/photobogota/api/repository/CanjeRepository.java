@@ -11,6 +11,8 @@ public interface CanjeRepository extends MongoRepository<Canje, String> {
 
     Optional<Canje> findByCodigoIgnoreCase(String codigo);
 
+    long countByMiembroNombre(String miembroNombre);
+
     List<Canje> findByMiembroNombre(String miembroNombre);
 
     List<Canje> findByPromocionId(String promocionId);
