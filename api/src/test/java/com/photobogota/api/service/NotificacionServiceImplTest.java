@@ -328,7 +328,7 @@ class NotificacionServiceImplTest {
     }
 
     @Test
-    void notificarNuevoSpot_conCanalEmail_enviaCorreoYGuarda() {
+    void notificarNuevoSpot_conCanalEmail_soloEnviaCorreoNoGuardaEnApp() {
         Spot spot = new Spot();
         spot.setId("s1");
         spot.setNombre("Plaza de Bolívar");
@@ -349,6 +349,32 @@ class NotificacionServiceImplTest {
 
         servicio.notificarNuevoSpot(spot);
 
+        verify(notificacionRepository, never()).save(any(Notificacion.class));
+        verify(emailService).enviarCorreoHtml(eq("user2@mail.com"), eq("Nuevo spot en La Candelaria"), anyString());
+    }
+
+    @Test
+    void notificarNuevoSpot_conCanalAmbos_guardaEnAppYEnviaCorreo() {
+        Spot spot = new Spot();
+        spot.setId("s1");
+        spot.setNombre("Plaza de Bolívar");
+        spot.setLocalidad("La Candelaria");
+        spot.setCategoria("Patrimonio");
+        spot.setCreadorUsername("juan");
+
+        PreferenciasNotificacion interesado = preferencias("user2");
+        interesado.setCanalPreferido(CanalNotificacion.AMBOS);
+        when(preferenciasNotificacionRepository
+                .findByLocalidadesInteresContainingOrCategoriasInteresContaining("La Candelaria", "Patrimonio"))
+                .thenReturn(List.of(interesado));
+        when(usuarioAuthRepository.findByNombreUsuario("user2"))
+                .thenReturn(Optional.of(UsuarioAuth.builder()
+                        .nombreUsuario("user2")
+                        .email("user2@mail.com")
+                        .build()));
+
+        servicio.notificarNuevoSpot(spot);
+
         ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
         verify(notificacionRepository).save(captor.capture());
         Notificacion guardada = captor.getValue();
@@ -356,6 +382,75 @@ class NotificacionServiceImplTest {
         assertThat(guardada.getTipo()).isEqualTo(NotificacionTipo.NUEVO_SPOT_INTERES);
         assertThat(guardada.getSpotId()).isEqualTo("s1");
         verify(emailService).enviarCorreoHtml(eq("user2@mail.com"), eq("Nuevo spot en La Candelaria"), anyString());
+    }
+
+    @Test
+    void notificarNuevoSpot_conCanalApp_soloGuardaEnAppNoEnviaCorreo() {
+        Spot spot = new Spot();
+        spot.setId("s1");
+        spot.setNombre("Plaza de Bolívar");
+        spot.setLocalidad("La Candelaria");
+        spot.setCategoria("Patrimonio");
+        spot.setCreadorUsername("juan");
+
+        PreferenciasNotificacion interesado = preferencias("user2");
+        interesado.setCanalPreferido(CanalNotificacion.APP);
+        when(preferenciasNotificacionRepository
+                .findByLocalidadesInteresContainingOrCategoriasInteresContaining("La Candelaria", "Patrimonio"))
+                .thenReturn(List.of(interesado));
+
+        servicio.notificarNuevoSpot(spot);
+
+        verify(notificacionRepository).save(any(Notificacion.class));
+        verify(emailService, never()).enviarCorreoHtml(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void notificarNuevoSpot_conCanalEmailSinCorreoRegistrado_noEnviaNada() {
+        Spot spot = new Spot();
+        spot.setId("s1");
+        spot.setNombre("Plaza de Bolívar");
+        spot.setLocalidad("La Candelaria");
+        spot.setCategoria("Patrimonio");
+        spot.setCreadorUsername("juan");
+
+        PreferenciasNotificacion interesado = preferencias("user2");
+        interesado.setCanalPreferido(CanalNotificacion.EMAIL);
+        when(preferenciasNotificacionRepository
+                .findByLocalidadesInteresContainingOrCategoriasInteresContaining("La Candelaria", "Patrimonio"))
+                .thenReturn(List.of(interesado));
+        when(usuarioAuthRepository.findByNombreUsuario("user2"))
+                .thenReturn(Optional.of(UsuarioAuth.builder()
+                        .nombreUsuario("user2")
+                        .email("  ")
+                        .build()));
+
+        servicio.notificarNuevoSpot(spot);
+
+        verify(notificacionRepository, never()).save(any(Notificacion.class));
+        verify(emailService, never()).enviarCorreoHtml(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void notificarNuevoSpot_conCanalEmailUsuarioNoRegistrado_noEnviaNada() {
+        Spot spot = new Spot();
+        spot.setId("s1");
+        spot.setNombre("Plaza de Bolívar");
+        spot.setLocalidad("La Candelaria");
+        spot.setCategoria("Patrimonio");
+        spot.setCreadorUsername("juan");
+
+        PreferenciasNotificacion interesado = preferencias("user2");
+        interesado.setCanalPreferido(CanalNotificacion.EMAIL);
+        when(preferenciasNotificacionRepository
+                .findByLocalidadesInteresContainingOrCategoriasInteresContaining("La Candelaria", "Patrimonio"))
+                .thenReturn(List.of(interesado));
+        when(usuarioAuthRepository.findByNombreUsuario("user2")).thenReturn(Optional.empty());
+
+        servicio.notificarNuevoSpot(spot);
+
+        verify(notificacionRepository, never()).save(any(Notificacion.class));
+        verify(emailService, never()).enviarCorreoHtml(anyString(), anyString(), anyString());
     }
 
     @Test

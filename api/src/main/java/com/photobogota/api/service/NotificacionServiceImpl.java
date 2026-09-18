@@ -286,21 +286,23 @@ public class NotificacionServiceImpl implements INotificacionService {
             return; // el usuario desactivó las notificaciones (criterio de aceptación #4)
         }
 
-        Notificacion notificacion = Notificacion.builder()
-                .destinatarioUsername(prefs.getUsername())
-                .tipo(tipo)
-                .titulo(titulo)
-                .mensaje(mensaje)
-                .spotId(spotId)
-                .emisorUsername(emisorUsername)
-                .leida(false)
-                .fechaCreacion(LocalDateTime.now())
-                .build();
-
-        notificacionRepository.save(notificacion);
-
         CanalNotificacion canal = prefs.getCanalPreferido() != null ? prefs.getCanalPreferido()
                 : CanalNotificacion.APP;
+
+        if (canal == CanalNotificacion.APP || canal == CanalNotificacion.AMBOS) {
+            Notificacion notificacion = Notificacion.builder()
+                    .destinatarioUsername(prefs.getUsername())
+                    .tipo(tipo)
+                    .titulo(titulo)
+                    .mensaje(mensaje)
+                    .spotId(spotId)
+                    .emisorUsername(emisorUsername)
+                    .leida(false)
+                    .fechaCreacion(LocalDateTime.now())
+                    .build();
+
+            notificacionRepository.save(notificacion);
+        }
 
         if (canal == CanalNotificacion.EMAIL || canal == CanalNotificacion.AMBOS) {
             enviarCorreoNotificacion(prefs.getUsername(), titulo, mensaje);
@@ -308,18 +310,20 @@ public class NotificacionServiceImpl implements INotificacionService {
     }
 
     private void enviarCorreoNotificacion(String destinatarioUsername, String titulo, String mensaje) {
-        usuarioAuthRepository.findByNombreUsuario(destinatarioUsername).ifPresent(auth -> {
-            try {
-                String html = "<div style=\"font-family:Arial,sans-serif;\">"
-                        + "<h2>" + titulo + "</h2>"
-                        + "<p>" + mensaje + "</p>"
-                        + "<p style=\"color:#888;font-size:12px;\">PhotoBogotá</p>"
-                        + "</div>";
-                emailService.enviarCorreoHtml(auth.getEmail(), titulo, html);
-            } catch (Exception e) {
-                log.error("No se pudo enviar el correo de notificación a {}: {}", destinatarioUsername,
-                        e.getMessage());
-            }
-        });
+        usuarioAuthRepository.findByNombreUsuario(destinatarioUsername)
+                .filter(auth -> auth.getEmail() != null && !auth.getEmail().isBlank())
+                .ifPresent(auth -> {
+                    try {
+                        String html = "<div style=\"font-family:Arial,sans-serif;\">"
+                                + "<h2>" + titulo + "</h2>"
+                                + "<p>" + mensaje + "</p>"
+                                + "<p style=\"color:#888;font-size:12px;\">PhotoBogotá</p>"
+                                + "</div>";
+                        emailService.enviarCorreoHtml(auth.getEmail(), titulo, html);
+                    } catch (Exception e) {
+                        log.error("No se pudo enviar el correo de notificación a {}: {}", destinatarioUsername,
+                                e.getMessage());
+                    }
+                });
     }
 }
