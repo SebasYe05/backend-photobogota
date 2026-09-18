@@ -16,7 +16,6 @@ import com.photobogota.api.dto.CrearReporteRequestDTO;
 import com.photobogota.api.dto.EscalarReporteRequestDTO;
 import com.photobogota.api.dto.ReporteResponseDTO;
 import com.photobogota.api.dto.ValidarReporteRequestDTO;
-import com.photobogota.api.dto.ValidarReporteRequestDTO;
 import com.photobogota.api.exception.AccessForbiddenException;
 import com.photobogota.api.exception.OperacionInvalidaException;
 import com.photobogota.api.exception.ResourceNotFoundException;
@@ -267,26 +266,74 @@ public class ReporteServiceImpl implements IReporteService {
 
         validarPropiedad(reporte, rolUsuario, usuario);
 
-        if (Boolean.TRUE.equals(reporte.getEscalado())) {
-            throw new OperacionInvalidaException("Este reporte ya fue escalado a un nivel superior");
-        }
+        Rol siguienteNivel = determinarSiguienteNivelEscalamiento(reporte, rolUsuario);
 
-        // Cadena de escalamiento: SOCIO -> MOD -> ADMIN.
-        if (rolUsuario == Rol.MOD) {
-            reporte.setAsignadoA(Rol.ADMIN);
-            // Un reporte escalado a administración pasa a ser prioritario.
-            reporte.setGravedad(Gravedad.CRITICA);
-        } else if (rolUsuario == Rol.SOCIO) {
-            reporte.setAsignadoA(Rol.MOD);
-        } else {
-            throw new AccessForbiddenException("No tienes permiso para escalar este reporte");
+        registrarEscalamiento(reporte, rolUsuario, siguienteNivel, usuario, request.getMotivo(), false);
+
+        Reporte actualizado = reporteRepository.save(reporte);
+
+        notificacionService.notificarPorRol(siguienteNivel,
+                "Reporte escalado: " + actualizado.getNumeroTicket(),
+                usuario + " te escaló el reporte " + actualizado.getNumeroTicket()
+                        + (request.getMotivo() != null && !request.getMotivo().isBlank()
+                                ? ". Motivo: " + request.getMotivo()
+                                : "."),
+                usuario);
+
+        return mapearADTO(actualizado);
+    }
+
+    // Un SOCIO solo puede escalar lo suyo (a MOD). Un MOD solo lo suyo (a
+    // ADMIN). ADMIN es el techo de la cadena: no hay a quién escalarle.
+    private Rol determinarSiguienteNivelEscalamiento(Reporte reporte, Rol rolUsuario) {
+        if (rolUsuario == Rol.SOCIO) {
+            if (reporte.getAsignadoA() != Rol.SOCIO) {
+                throw new AccessForbiddenException("Este reporte no está asignado a tu local");
+            }
+            return Rol.MOD;
         }
+        if (rolUsuario == Rol.MOD) {
+            if (reporte.getAsignadoA() != Rol.MOD) {
+                throw new AccessForbiddenException("Este reporte no está asignado a moderación");
+            }
+            return Rol.ADMIN;
+        }
+        throw new AccessForbiddenException("Tu rol no puede escalar reportes");
+    }
+
+    private void registrarEscalamiento(Reporte reporte, Rol de, Rol a, String por, String motivo,
+            boolean automatico) {
+        LocalDateTime ahora = LocalDateTime.now();
+
+        if (reporte.getHistorialEscalamiento() == null) {
+            reporte.setHistorialEscalamiento(new ArrayList<>());
+        }
+        reporte.getHistorialEscalamiento().add(Reporte.Escalamiento.builder()
+                .de(de)
+                .a(a)
+                .por(por)
+                .motivo(motivo)
+                .automatico(automatico)
+                .fecha(ahora)
+                .build());
 
         reporte.setEscalado(true);
-        reporte.setFechaEscalado(LocalDateTime.now());
-        reporte.setEscaladoPor(usuario);
-        reporte.setMotivoEscalado(request.getMotivo());
-        reporte.setFechaActualizacion(LocalDateTime.now());
+        reporte.setFechaEscalado(ahora);
+        reporte.setEscaladoPor(por);
+        reporte.setMotivoEscalado(motivo);
+        reporte.setEscaladoAutomaticamente(automatico);
+        reporte.setAsignadoA(a);
+        // Un reporte escalado pasa a ser prioritario en el dashboard del
+        // siguiente nivel.
+        reporte.setGravedad(Gravedad.CRITICA);
+        reporte.setFechaActualizacion(ahora);
+    }
+
+    // Escalamiento automático (HU 15 pt 7): sube a MOD los reportes de un
+    // SOCIO que llevan más de 24h sin respuesta. Lo llama el scheduler.
+    public void escalarVencidosAutomaticamente() {
+        List<Reporte> vencidos = reporteRepository.findByAsignadoAAndEstadoAndFechaLimiteRespuestaBefore(
+                Rol.SOCIO, EstadoReporte.NUEVO, LocalDateTime.now());
 
         for (Reporte reporte : vencidos) {
             registrarEscalamiento(reporte, Rol.SOCIO, Rol.MOD, "sistema",
@@ -382,6 +429,37 @@ public class ReporteServiceImpl implements IReporteService {
         return spotRepository.findById(reporte.getSpotId())
                 .map(spot -> usuario != null && usuario.equalsIgnoreCase(spot.getCreadorUsername()))
                 .orElse(false);
+    }
+
+    private void agregarObservacion(Reporte reporte, String autor, String texto) {
+        if (reporte.getBitacora() == null) {
+            reporte.setBitacora(new ArrayList<>());
+        }
+        reporte.getBitacora().add(Reporte.Observacion.builder()
+                .autor(autor)
+                .texto(texto)
+                .fecha(LocalDateTime.now())
+                .build());
+    }
+
+    // Avisa de inmediato a quien le corresponde atender el reporte recién
+    // creado (HU 6 pt 3, HU 15 pt 1, HU 16 pt 7): al dueño del local si se
+    // asignó a un SOCIO, o a la cola del rol que corresponda en otro caso.
+    private void notificarNuevaAsignacion(Reporte reporte) {
+        String titulo = "Nuevo reporte asignado: " + reporte.getNumeroTicket();
+        String mensaje = "Se te asignó el reporte " + reporte.getNumeroTicket() + " ("
+                + reporte.getCategoria() + ")"
+                + (reporte.getNombreSpot() != null ? " sobre \"" + reporte.getNombreSpot() + "\"" : "") + ".";
+
+        if (reporte.getAsignadoA() == Rol.SOCIO) {
+            if (reporte.getPropietarioSocio() != null) {
+                notificacionService.notificarSistema(reporte.getPropietarioSocio(), titulo,
+                        mensaje + " Tienes 24h para responder y 5 días para resolverlo.");
+            }
+            return;
+        }
+
+        notificacionService.notificarPorRol(reporte.getAsignadoA(), titulo, mensaje, "sistema");
     }
 
     private void otorgarPuntosPorValidacion(Reporte reporte) {
@@ -540,7 +618,6 @@ public class ReporteServiceImpl implements IReporteService {
                 .fechaLimiteRespuesta(reporte.getFechaLimiteRespuesta())
                 .fechaLimiteResolucion(reporte.getFechaLimiteResolucion())
                 .actualizadoPor(reporte.getActualizadoPor())
-                .resueltoPor(reporte.getResueltoPor())
                 .estado(reporte.getEstado())
                 .fechaCreacion(reporte.getFechaCreacion())
                 .fechaActualizacion(reporte.getFechaActualizacion())

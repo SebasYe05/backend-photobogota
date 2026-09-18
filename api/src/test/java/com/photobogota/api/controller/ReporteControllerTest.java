@@ -63,7 +63,7 @@ class ReporteControllerTest extends ControllerTestSupport {
 
     @Test
     void listarAsignadosAModerador_devuelve200() throws Exception {
-        when(reporteService.listarPorRolAsignado(Rol.MOD)).thenReturn(java.util.List.of());
+        when(reporteService.listarPorRolAsignado(Rol.MOD, null)).thenReturn(java.util.List.of());
 
         mvc(controller)
                 .perform(get("/api/v1/reportes/asignados/moderador").with(autenticado("mod", "MOD")))
@@ -72,7 +72,7 @@ class ReporteControllerTest extends ControllerTestSupport {
 
     @Test
     void listarAsignadosAAdmin_devuelve200() throws Exception {
-        when(reporteService.listarPorRolAsignado(Rol.ADMIN)).thenReturn(java.util.List.of());
+        when(reporteService.listarPorRolAsignado(Rol.ADMIN, null)).thenReturn(java.util.List.of());
 
         mvc(controller)
                 .perform(get("/api/v1/reportes/asignados/admin").with(autenticado("admin", "ADMIN")))

@@ -17,7 +17,15 @@ public interface ReporteRepository extends MongoRepository<Reporte, String> {
 
     List<Reporte> findByAsignadoA(Rol asignadoA);
 
+    List<Reporte> findByAsignadoAAndPropietarioSocio(Rol asignadoA, String propietarioSocio);
+
     List<Reporte> findByAsignadoAAndEstado(Rol asignadoA, EstadoReporte estado);
+
+    // Escalamiento automático (HU 15 pt 7): reportes de un SOCIO que llevan
+    // más de 24h sin respuesta (su fechaLimiteRespuesta ya venció y siguen
+    // en NUEVO).
+    List<Reporte> findByAsignadoAAndEstadoAndFechaLimiteRespuestaBefore(Rol asignadoA, EstadoReporte estado,
+            LocalDateTime fecha);
 
     // Cola de validación de moderador: reportes que un SOCIO/ADMIN marcó como
     // solucionado y que esperan aprobación (estado PENDIENTE_VALIDACION).
