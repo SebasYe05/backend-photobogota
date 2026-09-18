@@ -19,6 +19,7 @@ import com.photobogota.api.model.NotificacionTipo;
 import com.photobogota.api.model.PreferenciasNotificacion;
 import com.photobogota.api.model.Rol;
 import com.photobogota.api.model.Spot;
+import com.photobogota.api.model.UsuarioAuth;
 import com.photobogota.api.repository.NotificacionRepository;
 import com.photobogota.api.repository.PreferenciasNotificacionRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
@@ -249,6 +250,22 @@ public class NotificacionServiceImpl implements INotificacionService {
                 .build();
 
         notificacionRepository.save(notificacion);
+    }
+
+    @Override
+    public void notificarPorRol(Rol rol, String titulo, String mensaje, String emisorUsername) {
+        List<String> destinatarios = usuarioAuthRepository.findByRol(rol).stream()
+                .map(UsuarioAuth::getNombreUsuario)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+        for (String destinatario : destinatarios) {
+            if (destinatario.equals(emisorUsername)) {
+                continue; // no notificarse a sí mismo
+            }
+            notificarSistema(destinatario, titulo, mensaje);
+        }
     }
 
     @Override

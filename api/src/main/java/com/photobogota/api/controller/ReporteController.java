@@ -21,7 +21,6 @@ import com.photobogota.api.dto.CrearReporteRequestDTO;
 import com.photobogota.api.dto.EscalarReporteRequestDTO;
 import com.photobogota.api.dto.ReporteResponseDTO;
 import com.photobogota.api.dto.ValidarReporteRequestDTO;
-import com.photobogota.api.dto.ValidarReporteRequestDTO;
 import com.photobogota.api.model.CategoriaReporte;
 import com.photobogota.api.model.EstadoReporte;
 import com.photobogota.api.model.Gravedad;
@@ -126,7 +125,8 @@ public class ReporteController {
         Rol rolUsuario = obtenerRol(userDetails);
         return ResponseEntity.ok(reporteService.obtenerDashboard(
                 rolUsuario, userDetails.getUsername(), estado, gravedad, categoria, tipoObjetivo, escalado, orden));
-        };
+    }
+
     @Operation(summary = "Cambiar el estado de un reporte", description = "Un MOD solo puede cambiar el estado de reportes asignados a moderación; un SOCIO solo los de sus propios locales. Un ADMIN puede cambiar cualquier reporte. Si un SOCIO/ADMIN marca RESUELTO, queda PENDIENTE_VALIDACION.", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estado actualizado"),
@@ -152,7 +152,6 @@ public class ReporteController {
             @ApiResponse(responseCode = "404", description = "Reporte no encontrado")
     })
     @PatchMapping("/{id}/escalar")
-    @PreAuthorize("hasAnyRole('SOCIO', 'MOD')")
     @PreAuthorize("hasAnyRole('SOCIO', 'MOD')")
     public ResponseEntity<ReporteResponseDTO> escalarReporte(
             @PathVariable String id,
@@ -189,7 +188,7 @@ public class ReporteController {
     // basta con distinguir cuál de los dos es para aplicar las reglas de
     // negocio (ownership, visibilidad del dashboard, quién puede escalar).
     private Rol obtenerRol(UserDetails userDetails) {
-        List<String> authorities = userDetails.getAuthorities().stream()
+        boolean esAdmin = userDetails.getAuthorities().stream()
                 .map(authority -> authority.getAuthority())
                 .anyMatch("ROLE_ADMIN"::equals);
         boolean esSocio = userDetails.getAuthorities().stream()

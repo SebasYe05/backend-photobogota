@@ -49,5 +49,9 @@ public interface INotificacionService {
     // no un aviso discrecional.
     void notificarSistema(String destinatarioUsername, String titulo, String mensaje);
 
+    // Notifica a todos los usuarios con un rol (ej: avisar a la cola de MOD
+    // que llego un reporte escalado), salvo al propio emisor.
+    void notificarPorRol(Rol rol, String titulo, String mensaje, String emisorUsername);
+
     void notificarSubidaNivel(String destinatarioUsername, int nuevoNivel);
 }

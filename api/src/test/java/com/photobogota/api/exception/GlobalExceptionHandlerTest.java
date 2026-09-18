@@ -306,8 +306,10 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<Map<String, Object>> respuesta = handler.handleValidationErrors(ex, req);
 
         assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat((Map<String, Object>) respuesta.getBody().get("errors"))
-                .containsEntry("email", "El email es requerido");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> errors = (List<Map<String, Object>>) respuesta.getBody().get("errors");
+        assertThat(errors).hasSize(1);
+        assertThat(errors.get(0)).containsEntry("defaultMessage", "El email es requerido");
     }
 
     public void metodoValidable(Miembro miembro) {

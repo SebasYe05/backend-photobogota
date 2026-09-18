@@ -7,7 +7,6 @@ import com.photobogota.api.dto.CrearReporteRequestDTO;
 import com.photobogota.api.dto.EscalarReporteRequestDTO;
 import com.photobogota.api.dto.ReporteResponseDTO;
 import com.photobogota.api.dto.ValidarReporteRequestDTO;
-import com.photobogota.api.dto.ValidarReporteRequestDTO;
 import com.photobogota.api.model.CategoriaReporte;
 import com.photobogota.api.model.EstadoReporte;
 import com.photobogota.api.model.Gravedad;

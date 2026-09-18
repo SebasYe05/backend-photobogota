@@ -121,7 +121,7 @@ class ReporteServiceImplTest {
 
         assertThat(resultado.getTipoObjetivo()).isEqualTo(TipoObjetivoReporte.RESENA);
         assertThat(resultado.getEstado()).isEqualTo(EstadoReporte.NUEVO);
-        assertThat(resultado.getAsignadoA()).isEqualTo(Rol.MOD);
+        assertThat(resultado.getAsignadoA()).isEqualTo(Rol.SOCIO);
         assertThat(resultado.getGravedad()).isEqualTo(Gravedad.ALTA);
         assertThat(resultado.getNombreSpot()).isEqualTo("Caldos Doña Gloria");
         assertThat(resultado.getEsLocalDeSocio()).isTrue();
@@ -153,7 +153,9 @@ class ReporteServiceImplTest {
 
     @Test
     void crearReporte_errorTecnico_seAsignaAAdmin() {
-        when(spotRepository.findById("spot-1")).thenReturn(Optional.of(spotDeEjemplo()));
+        Spot spotMiembro = spotDeEjemplo();
+        spotMiembro.setCreadorRol("MIEMBRO");
+        when(spotRepository.findById("spot-1")).thenReturn(Optional.of(spotMiembro));
         when(calificacionRepository.findById("resena-1")).thenReturn(Optional.of(calificacionDeEjemplo()));
         when(reporteRepository.countByResenaIdAndEstadoIn(eq("resena-1"), anyList())).thenReturn(0L);
         when(reporteRepository.save(any(Reporte.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -241,7 +243,7 @@ class ReporteServiceImplTest {
     void listarPorRolAsignado_devuelveLosDeLaColaDelRol() {
         when(reporteRepository.findByAsignadoA(Rol.MOD)).thenReturn(List.of(reporteDeEjemplo()));
 
-        List<ReporteResponseDTO> resultado = reporteService.listarPorRolAsignado(Rol.MOD);
+        List<ReporteResponseDTO> resultado = reporteService.listarPorRolAsignado(Rol.MOD, null);
 
         assertThat(resultado).hasSize(1);
     }
@@ -379,6 +381,7 @@ class ReporteServiceImplTest {
     void escalarReporte_socio_asignaMod() {
         Reporte reporte = reporteDeEjemplo();
         reporte.setSpotId("spot-1");
+        reporte.setAsignadoA(Rol.SOCIO);
         when(reporteRepository.findById("rep-1")).thenReturn(Optional.of(reporte));
         when(spotRepository.findById("spot-1")).thenReturn(Optional.of(spotDeEjemplo()));
         when(reporteRepository.save(any(Reporte.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -405,16 +408,19 @@ class ReporteServiceImplTest {
     }
 
     @Test
-    void escalarReporte_yaEscalado_lanzaOperacionInvalida() {
+    void escalarReporte_yaEscalado_permiteReescalar() {
         Reporte reporte = reporteDeEjemplo();
         reporte.setEscalado(true);
         when(reporteRepository.findById("rep-1")).thenReturn(Optional.of(reporte));
+        when(reporteRepository.save(any(Reporte.class))).thenAnswer(inv -> inv.getArgument(0));
 
         EscalarReporteRequestDTO request = new EscalarReporteRequestDTO();
         request.setMotivo("Nuevo escalamiento");
 
-        assertThatThrownBy(() -> reporteService.escalarReporte("rep-1", request, "mod1", Rol.MOD))
-                .isInstanceOf(OperacionInvalidaException.class);
+        ReporteResponseDTO resultado = reporteService.escalarReporte("rep-1", request, "mod1", Rol.MOD);
+
+        assertThat(resultado.getAsignadoA()).isEqualTo(Rol.ADMIN);
+        assertThat(resultado.getHistorialEscalamiento()).hasSize(1);
     }
 
     @Test
