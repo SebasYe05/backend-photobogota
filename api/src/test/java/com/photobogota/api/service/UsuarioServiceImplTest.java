@@ -8,6 +8,7 @@ import com.photobogota.api.model.Usuario;
 import com.photobogota.api.model.UsuarioAuth;
 import com.photobogota.api.mapper.SpotMapper;
 import com.photobogota.api.repository.CalificacionRepository;
+import com.photobogota.api.repository.CanjeRepository;
 import com.photobogota.api.repository.GuardadoRepository;
 import com.photobogota.api.repository.SpotRepository;
 import com.photobogota.api.repository.UsuarioAuthRepository;
@@ -70,6 +71,12 @@ class UsuarioServiceImplTest {
 
         @Mock
         private GuardadoRepository guardadoRepository; // Simula la BD de guardados
+
+        @Mock
+        private CanjeRepository canjeRepository; // Simula la BD de canjes
+
+        @Mock
+        private PromocionService promocionService; // Simula el servicio de promociones
 
         @Mock
         private SpotMapper spotMapper; // Simula el mapeador de spots
@@ -149,6 +156,11 @@ class UsuarioServiceImplTest {
                 // any(Usuario.class) acepta cualquier instancia de Usuario, sin importar su
                 // estado.
                 when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+                // Contadores del perfil (por defecto Mockito devolvería 0 para long,
+                // pero se estipulan explícitamente para dejar claro el comportamiento)
+                when(canjeRepository.countByMiembroNombre(nombreUsuario)).thenReturn(0L);
+                when(promocionService.contarActivas(nombreUsuario)).thenReturn(0L);
 
                 // --------------------------------------------------------
                 // FASE 2 — ACT (Ejecutar)
